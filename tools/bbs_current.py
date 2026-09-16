@@ -23,9 +23,18 @@ def tmpdir():
     t = os.environ.get("TMPDIR") or subprocess.run(["getconf", "DARWIN_USER_TEMP_DIR"], capture_output=True, text=True).stdout.strip()
     return t
 def newest_autosave():
-    c = glob.glob(os.path.join(tmpdir(), "bamboo_model", "*", "*", ".3mf"))
-    if not c: raise SystemExit("no Bambu Studio autosave found (is Studio running with a project open?)")
-    return max(c, key=os.path.getmtime)
+    # one autosave dir per open Studio window: <day>/<time>#<pid>#<n>/; lock.txt holds the pid
+    dirs = glob.glob(os.path.join(tmpdir(), "bamboo_model", "*", "*", ""))
+    live = []
+    for d in dirs:
+        try: pid = int(open(os.path.join(d, "lock.txt")).read().strip())
+        except (OSError, ValueError): continue
+        try: os.kill(pid, 0)
+        except OSError: continue
+        if os.path.exists(os.path.join(d, ".3mf")): live.append((pid, d))
+    if not live: raise SystemExit("no live Bambu Studio autosave found (is Studio running with a project open?)")
+    if len(live) > 1: print("note: several Studio windows are open:", ", ".join(f"pid {p} -> {os.path.basename(d.rstrip('/'))}" for p, d in live), "— using the most recent .3mf")
+    return max((os.path.join(d, ".3mf") for _, d in live), key=os.path.getmtime)
 def norm(v):
     if isinstance(v, list) and len(v) == 1: v = v[0]
     if isinstance(v, (list, dict)): return json.dumps(v, ensure_ascii=False)
