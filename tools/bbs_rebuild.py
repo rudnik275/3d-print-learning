@@ -42,4 +42,5 @@ def main():
         xml += ['    </vertices>\n    <triangles>\n'] + [f'     <triangle v1="{a}" v2="{b}" v3="{c}"/>\n' for a, b, c in ts] + ['    </triangles>\n', TAIL]
         files[path] = "".join(xml).encode(); print(f"object {oid} ({src}): {len(vs)} verts, {len(ts)} tris -> {path}")
     _write_zip(out, files); print("written:", out)
-main()
+if __name__ == "__main__":
+    main()

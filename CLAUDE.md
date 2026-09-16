@@ -24,7 +24,8 @@
 - `tools/bbs_screenshot.sh` — скриншот экрана через `tools/ScreenGrab.app` (обёртка над screencapture: macOS даёт «Запись экрана» только .app-бандлам); один раз включить ScreenGrab в Системных настройках.
 - Менять настройки: вариант проекта (`bbs_project.py variant --set`), а не инструкции по UI; постоянные изменения — JSON-пресетом в `profiles/user/` через Import Configs в Studio. Файлы в `user/` под запущенной Studio перезаписывает облачная синхронизация.
 - Слайсинг без UI для проверки: `/Applications/BambuStudio.app/Contents/MacOS/BambuStudio --help`.
-- Access code и serial принтера — только в 1Password, через `with-secrets`.
+- Принтер по LAN: `tools/bbl_printer.py status|upload|print|stop|camera` (IP/serial в `.printer.json`, не в git; access code скрипт читает **в процессе** из `BambuStudio.conf` → `access_code[serial]` и никогда не печатает — в чат/репо он не попадает). Статус и заливка по FTPS работают всегда; **команды управления (`project_file`, `ledctrl`) прошивка 01.08 отбрасывает молча, пока на экране принтера не включён Developer Mode** (Authorization Control, 2026-09-16). Без него удалённый старт — только через Bambu Handy с телефона: файл уже лежит на SD-карте.
+- Калибровочные столы без мастера Studio: `tools/bbs_calib.py flow1|flow2` (логика 1:1 из CalibUtils.cpp), затем CLI-нарезка → `.gcode.3mf` → принтер.
 
 ## Fusion
 
