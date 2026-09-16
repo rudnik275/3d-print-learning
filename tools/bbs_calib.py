@@ -85,19 +85,24 @@ def flow_plate(base, out, pass_no, coarse=1.0):
     def mod(name):
         s = name[9:]; return -float(s[1:]) if s.startswith("m") else float(s)
     objs.sort(key=lambda o: mod(o[0]))
-    size = max(max(v[0] for v in o[1]) - min(v[0] for v in o[1]) for o in objs)
-    cols = 3 if len(objs) <= 9 else 4; rows = -(-len(objs) // cols); pitch = size + 8
+    w = max(max(v[0] for v in o[1]) - min(v[0] for v in o[1]) for o in objs)
+    d = max(max(v[1] for v in o[1]) - min(v[1] for v in o[1]) for o in objs)
+    px, py = w + 5, d + 5                      # pitch = block + 5 mm gap
+    usable = BED - 20                          # keep 10 mm from the edges (purge line / exclusion corner)
+    cols = max(1, min(4, int(usable // px))); rows = -(-len(objs) // cols)
+    if rows * py > usable: raise SystemExit(f"{len(objs)} blocks of {w:.0f}x{d:.0f} mm do not fit the {BED:.0f} mm bed")
     placed = []
     for i, (name, vs, ts) in enumerate(objs):
         r, c = divmod(i, cols)
-        cx = BED/2 + (c - (cols-1)/2) * pitch; cy = BED/2 + ((rows-1)/2 - r) * pitch
+        cx = BED/2 + (c - (cols-1)/2) * px; cy = BED/2 + ((rows-1)/2 - r) * py
         placed.append((name, vs, ts, (cx, cy)))
+    size, pitch = w, px
     def per_obj(name):
         return {"print_flow_ratio": f"{coarse * (1 + mod(name)/100):.4f}", "wall_loops": "3", "top_shell_layers": "5",
                 "bottom_shell_layers": "1", "sparse_infill_density": "35%", "ironing_type": "no ironing",
                 "top_surface_pattern": "monotonic", "detect_thin_wall": "1"}
     build(base, out, placed, per_obj, {"reduce_crossing_wall": "1"}, f"Flow rate pass {pass_no}")
-    print("layout: %d objects, block %.1f mm, pitch %.1f mm, rows from back(+Y) to front: " % (len(objs), size, pitch) + " | ".join(f"{mod(o[0]):+.0f}%" for o in objs))
+    print("layout: %d objects, block %.0fx%.0f mm, %d per row, pitch %.0f/%.0f mm; order back(+Y)→front, left→right: " % (len(objs), w, d, cols, px, py) + " | ".join(f"{mod(o[0]):+.0f}%" for o in objs))
 
 def stl_mesh(path):
     """binary STL -> (verts, tris) with shared vertices"""
