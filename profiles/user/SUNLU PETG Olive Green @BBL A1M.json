@@ -1,0 +1,12 @@
+{
+    "filament_extruder_variant": [
+        "Direct Drive Standard"
+    ],
+    "filament_settings_id": [
+        "SUNLU PETG Olive Green @BBL A1M"
+    ],
+    "from": "User",
+    "inherits": "Generic PETG @BBL A1M",
+    "name": "SUNLU PETG Olive Green @BBL A1M",
+    "version": "2.8.0.6"
+}
