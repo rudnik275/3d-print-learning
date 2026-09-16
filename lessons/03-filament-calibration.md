@@ -9,9 +9,12 @@
 | Flow Rate coarse (−20…+20 %) при 220 °C | `prints/2026-09-16-calib/flow-pass1.3mf`, 27 мин | печатается |
 | Башня температур 230 → 195 | `temp-tower-230-195.3mf`, 1 ч 05 | нарезана, ждёт стола |
 | Flow Rate fine (−9…0 % от coarse) на выбранной T | `flow2` — собрать после coarse | — |
-| Max Volumetric Speed 4 → 30 мм³/с | `mvs-4-30.gcode.3mf` (цилиндр, spiral), ~15 мин, с SD | печатается |
-| Пресет `SUNLU PLA @BBL A1M` | `profiles/user/` → Import Configs | — |
+| Max Volumetric Speed 4 → 30 мм³/с | `mvs-4-30.gcode.3mf` (цилиндр, spiral), ~15 мин, с SD | устойчивая рыхлость с **21 мм = 13 мм³/с** → в пресет **12** |
+| Пресет `SUNLU PLA @BBL A1M` | `profiles/user/SUNLU PLA @BBL A1M.json` → Import Configs | 220 °C · flow 0.98 · MVS 12 |
 
 ## Выводы
 
-—
+- SUNLU PLA Bone White на A1 mini: **220 °C, flow ratio 0.98, MVS 12 мм³/с** (предел 13 при 220). Один профиль на PLA Bone White и Beige.
+- Порядок coarse → башня → fine → MVS сработал за один вечер (4 стола, ~2.5 ч печати). Fine-проход имеет смысл: coarse дал 0, fine уточнил до −2.
+- MVS у этого PLA низкий (13): профили процесса со скоростями стенок > 150 мм/с при 0.2/0.42 всё равно упрутся в него — быстрые пресеты Bambu ускорения не дадут, зато качество не пострадает.
+- Мастер Studio не обязателен: те же тесты собираются из его ресурсов (`tools/bbs_calib.py`) и печатаются как обычные файлы.

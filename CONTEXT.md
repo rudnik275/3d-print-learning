@@ -22,6 +22,12 @@ SUNLU PLA Bone White, PLA Beige, PLA Matte Grey, PLA Matte Oak, PETG Olive Green
   - Machine 0.4: retraction 0.8 мм / 30 мм/с, z-hop 0.4 Auto Lift, wipe on.
 - PA: `enable_pressure_advance = 0` во всех профилях → значение берёт авто-калибровка принтера перед печатью, число в пресете не действует.
 
+## Калиброванные филаменты
+
+| Пресет | База | Температура | Flow ratio | MVS | Дата |
+| --- | --- | --- | --- | --- | --- |
+| `SUNLU PLA @BBL A1M` (Bone White, Beige) | SUNLU PLA+ @BBL A1M | 220 °C | 0.98 | 12 мм³/с (предел 13) | 2026-09-16 |
+
 ## Термины (как в Bambu Studio)
 
 - **wall loops / outer / inner wall** — периметры; **line width** — ширина дорожки.
