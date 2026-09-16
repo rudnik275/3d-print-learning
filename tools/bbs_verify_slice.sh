@@ -1,5 +1,6 @@
 #!/bin/zsh
 # Show the settings actually used by Studio's latest slice of a given window (by pid) — from its
+setopt null_glob
 # autosave G-code (hidden file Metadata/.<pid>.<n>.gcode). Usage: bbs_verify_slice.sh <pid> [key ...]
 pid=$1; shift
 d=$(ls -d ${TMPDIR:-$(getconf DARWIN_USER_TEMP_DIR)}bamboo_model/*/*#${pid}#*/ 2>/dev/null | tail -1)
