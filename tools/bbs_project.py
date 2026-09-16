@@ -57,6 +57,17 @@ def variant(inp, out, keep=None, sets=(), title=None):
             if k not in cfg: print("warn: unknown key", k)
             cfg[k] = [v] if isinstance(cfg.get(k), list) else v
             print(f"set {k} = {cfg[k]}")
+        # Studio marks changed keys per tab in different_settings_to_system = [process, filament, machine]
+        # (";"-joined key names); keeping it in sync gives the orange "modified" markers in the UI.
+        from bbs_resolve import resolve
+        fil = cfg.get("filament_settings_id", ["?"]); fil = fil[0] if isinstance(fil, list) else fil
+        bases = [resolve("process", cfg.get("print_settings_id", "")), resolve("filament", fil), resolve("machine", cfg.get("printer_settings_id", ""))]
+        diff = cfg.get("different_settings_to_system") or ["", "", ""]
+        for k, v in sets:
+            for i, b in enumerate(bases):
+                if k in b and str(b[k][0] if isinstance(b[k], list) else b[k]) != str(v):
+                    keys = [x for x in diff[i].split(";") if x]; keys.append(k) if k not in keys else None; diff[i] = ";".join(keys)
+        cfg["different_settings_to_system"] = diff; print("different_settings_to_system =", diff)
         files["Metadata/project_settings.config"] = json.dumps(cfg, indent=4, ensure_ascii=False).encode()
     _write_zip(out, files); print("written:", out)
 
