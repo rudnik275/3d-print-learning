@@ -7,6 +7,8 @@
   bbs_calib.py fix-sliced <sliced.gcode.3mf> [N1]           set printer_model_id in a CLI-sliced file
   bbs_calib.py temp <base.3mf> <out.3mf> <tower.stl> <t_hi> <t_lo>   temperature tower project (hot block at the bottom)
   bbs_calib.py inject-temps <sliced.gcode.3mf> <t_hi>       M104 per 10 mm block after CLI slicing
+  bbs_calib.py speed <base.3mf> <out.3mf> <f_lo> <f_hi>     max volumetric speed: single-wall spiral cylinder
+  bbs_calib.py speed-ramp <sliced.gcode.3mf> <f_lo> <f_hi>  write the flow ramp into the sliced gcode (print from SD)
 
 base_project supplies printer/filament/process settings (Metadata/project_settings.config).
 Per-object settings follow the wizard: print_flow_ratio = 1 + k/100, wall_loops 3, top 5, bottom 1,
@@ -149,6 +151,56 @@ def inject_temps(sliced, t_hi, block_mm=10.0):
     files["Metadata/plate_1.gcode"] = data; files["Metadata/plate_1.gcode.md5"] = hashlib.md5(data).hexdigest().upper().encode()
     _write_zip(sliced, files); print("M104 inserted:", n, "times; md5 refreshed")
 
+def cylinder_mesh(d=40.0, h=60.0, n=144):
+    """closed cylinder (solid) — spiral vase mode turns it into a single-wall tube"""
+    import math
+    vs, ts = [], []
+    for z in (0.0, h):
+        for i in range(n):
+            a = 2*math.pi*i/n; vs.append((d/2*math.cos(a), d/2*math.sin(a), z))
+    vs.append((0, 0, 0.0)); vs.append((0, 0, h)); cb, ct = 2*n, 2*n+1
+    for i in range(n):
+        j = (i+1) % n
+        ts.append((i, j, n+i)); ts.append((j, n+j, n+i))          # side
+        ts.append((cb, j, i)); ts.append((ct, n+i, n+j))          # caps
+    return vs, ts
+
+def speed_plate(base, out, f_lo, f_hi, d=40.0, h=60.0):
+    """max volumetric speed test: single-wall spiral cylinder; the flow ramp is written into the
+    sliced gcode afterwards by speed_ramp() (print the sliced file, do not re-slice in Studio)"""
+    vs, ts = cylinder_mesh(d, h)
+    per_obj = lambda name: {"brim_type": "outer_only"}
+    lw, lh = 0.42, 0.2
+    build(base, out, [("mvs_%d_%d" % (f_lo, f_hi), vs, ts, (BED/2, BED/2))], per_obj,
+          {"spiral_mode": "1", "wall_loops": "1", "top_shell_layers": "0", "bottom_shell_layers": "2", "sparse_infill_density": "0%",
+           "outer_wall_speed": str(int(f_hi/(lw*lh))), "slow_down_layer_time": "0", "enable_overhang_speed": "0",
+           "only_one_wall_top": "0", "resolution": "0.05"}, "MVS test %d-%d" % (f_lo, f_hi))
+    files = _read_zip(out); cfg = json.loads(files["Metadata/project_settings.config"])
+    cfg["filament_max_volumetric_speed"] = ["50"]; cfg["slow_down_for_layer_cooling"] = ["0"]; cfg["slow_down_layer_time"] = ["0"]
+    diff = cfg.get("different_settings_to_system") or ["", "", ""]; diff[1] = "filament_max_volumetric_speed;slow_down_for_layer_cooling;slow_down_layer_time"
+    cfg["different_settings_to_system"] = diff
+    files["Metadata/project_settings.config"] = json.dumps(cfg, indent=4, ensure_ascii=False).encode(); _write_zip(out, files)
+    print("mvs plate: ramp %d -> %d mm3/s over z 0.4..%.1f (line %.2f x %.2f => %.0f..%.0f mm/s)" % (f_lo, f_hi, h, lw, lh, f_lo/(lw*lh), f_hi/(lw*lh)))
+
+def speed_ramp(sliced, f_lo, f_hi, z0=0.4, lw=0.42, lh=0.2):
+    """rewrite F of extrusion moves per layer so volumetric flow ramps linearly from f_lo at z0 to f_hi at the top"""
+    import hashlib, re
+    files = _read_zip(sliced); g = files["Metadata/plate_1.gcode"].decode("utf8", "ignore").splitlines()
+    zs = [float(l.split(":")[1]) for l in g if l.startswith("; Z_HEIGHT:")]; top = max(zs)
+    out, z, n = [], 0.0, 0
+    for line in g:
+        if line.startswith("; Z_HEIGHT:"): z = float(line.split(":")[1])
+        if z > z0 and line.startswith("G1 ") and " E" in line and ("X" in line or "Y" in line) and not line.startswith("G1 E"):
+            e = re.search(r"\bE(-?[\d.]+)", line)
+            if e and float(e.group(1)) > 0:
+                flow = f_lo + (f_hi - f_lo) * (z - z0) / (top - z0); f = int(round(flow / (lw*lh) * 60))
+                line = re.sub(r"\bF[\d.]+", "F%d" % f, line) if re.search(r"\bF[\d.]+", line) else line + " F%d" % f; n += 1
+        out.append(line)
+    data = ("\n".join(out) + "\n").encode()
+    files["Metadata/plate_1.gcode"] = data; files["Metadata/plate_1.gcode.md5"] = hashlib.md5(data).hexdigest().upper().encode()
+    _write_zip(sliced, files)
+    print("speed ramp applied to %d moves; top z %.1f; flow(z) = %g + %g*(z-%g)/%g mm3/s" % (n, top, f_lo, f_hi-f_lo, z0, top-z0))
+
 def fix_sliced(path, model_id="N1"):
     """CLI export leaves printer_model_id empty in slice_info.config; the printer wants it (A1 mini = N1)."""
     f = _read_zip(path); s = f["Metadata/slice_info.config"].decode()
@@ -162,4 +214,6 @@ if __name__ == "__main__":
     elif a[0] == "fix-sliced": fix_sliced(a[1], a[2] if len(a) > 2 else "N1")
     elif a[0] == "temp": temp_plate(a[1], a[2], a[3], int(a[4]), int(a[5]))
     elif a[0] == "inject-temps": inject_temps(a[1], int(a[2]))
+    elif a[0] == "speed": speed_plate(a[1], a[2], float(a[3]), float(a[4]))
+    elif a[0] == "speed-ramp": speed_ramp(a[1], float(a[2]), float(a[3]))
     else: print(__doc__)
