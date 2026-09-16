@@ -4,6 +4,7 @@
   bbs_calib.py flow1 <base_project.3mf> <out.3mf>            flow-rate coarse: 9 blocks, -20..+20 %
   bbs_calib.py flow2 <base_project.3mf> <out.3mf> <coarse>   flow-rate fine: 10 blocks, -9..0 % on top of
                                                              the coarse flow ratio (e.g. 0.95)
+  bbs_calib.py fix-sliced <sliced.gcode.3mf> [N1]           set printer_model_id in a CLI-sliced file
 
 base_project supplies printer/filament/process settings (Metadata/project_settings.config).
 Per-object settings follow the wizard: print_flow_ratio = 1 + k/100, wall_loops 3, top 5, bottom 1,
@@ -96,8 +97,15 @@ def flow_plate(base, out, pass_no, coarse=1.0):
     build(base, out, placed, per_obj, {"reduce_crossing_wall": "1"}, f"Flow rate pass {pass_no}")
     print("layout: %d objects, block %.1f mm, pitch %.1f mm, rows from back(+Y) to front: " % (len(objs), size, pitch) + " | ".join(f"{mod(o[0]):+.0f}%" for o in objs))
 
+def fix_sliced(path, model_id="N1"):
+    """CLI export leaves printer_model_id empty in slice_info.config; the printer wants it (A1 mini = N1)."""
+    f = _read_zip(path); s = f["Metadata/slice_info.config"].decode()
+    f["Metadata/slice_info.config"] = s.replace('<metadata key="printer_model_id" value=""/>', f'<metadata key="printer_model_id" value="{model_id}"/>').encode()
+    _write_zip(path, f); print("printer_model_id set:", path)
+
 if __name__ == "__main__":
     a = sys.argv[1:]
     if a[0] == "flow1": flow_plate(a[1], a[2], 1)
     elif a[0] == "flow2": flow_plate(a[1], a[2], 2, float(a[3]))
+    elif a[0] == "fix-sliced": fix_sliced(a[1], a[2] if len(a) > 2 else "N1")
     else: print(__doc__)
