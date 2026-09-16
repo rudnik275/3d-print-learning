@@ -14,6 +14,8 @@
 
 ## Уроки
 
-1. `lessons/01-walls-calibration.md` — горбы на стенках коробки: калибровка и настройки стенок.
+1. `lessons/01-walls-calibration.md` — горбы на стенках коробки: состав стола, переходы геометрии, шов (тесты 1–2 ждут печати на калиброванном пресете).
+2. `lessons/02-threads.md` — резьба под FDM во Fusion: best practices, лестница зазоров.
+3. `lessons/03-filament-calibration.md` — SUNLU PLA откалиброван: 220 °C · flow 0.98 · MVS 12 → пресет `SUNLU PLA @BBL A1M`.
 
 Очередь тем: гладкая верхняя поверхность (ironing, top layers), скругления и оверхенги, корпус с защёлками (snap-fit под PETG/PLA), допуски и посадки, шов (seam / scarf), VFA-тест.

@@ -1,6 +1,6 @@
 # Урок 3 — калибровка филамента (SUNLU PLA Bone White)
 
-Статус: идёт (2026-09-16). Решение о профилях — `docs/adr/0002-filament-profiles.md`.
+Статус: **закрыт 2026-09-16** — пресет `SUNLU PLA @BBL A1M` импортирован в Studio и синхронизирован в облако (setting_id PFUS9704fe57e3be52). Решение о профилях — `docs/adr/0002-filament-profiles.md`.
 
 ## Ход
 
@@ -10,7 +10,7 @@
 | Башня температур 230 → 195 | `temp-tower-230-195.3mf`, 1 ч 05 | нарезана, ждёт стола |
 | Flow Rate fine (−9…0 % от coarse) на выбранной T | `flow2` — собрать после coarse | — |
 | Max Volumetric Speed 4 → 30 мм³/с | `mvs-4-30.gcode.3mf` (цилиндр, spiral), ~15 мин, с SD | устойчивая рыхлость с **21 мм = 13 мм³/с** → в пресет **12** |
-| Пресет `SUNLU PLA @BBL A1M` | `profiles/user/SUNLU PLA @BBL A1M.json` → Import Configs | 220 °C · flow 0.98 · MVS 12 |
+| Пресет `SUNLU PLA @BBL A1M` | `profiles/user/SUNLU PLA @BBL A1M.json` → Import Configs | импортирован; Studio хранит только `flow 0.98` (220 °C и MVS 12 совпадают с базой SUNLU PLA+) |
 
 ## Выводы
 
