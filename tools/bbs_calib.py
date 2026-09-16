@@ -5,6 +5,8 @@
   bbs_calib.py flow2 <base_project.3mf> <out.3mf> <coarse>   flow-rate fine: 10 blocks, -9..0 % on top of
                                                              the coarse flow ratio (e.g. 0.95)
   bbs_calib.py fix-sliced <sliced.gcode.3mf> [N1]           set printer_model_id in a CLI-sliced file
+  bbs_calib.py temp <base.3mf> <out.3mf> <tower.stl> <t_hi> <t_lo>   temperature tower project (hot block at the bottom)
+  bbs_calib.py inject-temps <sliced.gcode.3mf> <t_hi>       M104 per 10 mm block after CLI slicing
 
 base_project supplies printer/filament/process settings (Metadata/project_settings.config).
 Per-object settings follow the wizard: print_flow_ratio = 1 + k/100, wall_loops 3, top 5, bottom 1,
@@ -97,6 +99,51 @@ def flow_plate(base, out, pass_no, coarse=1.0):
     build(base, out, placed, per_obj, {"reduce_crossing_wall": "1"}, f"Flow rate pass {pass_no}")
     print("layout: %d objects, block %.1f mm, pitch %.1f mm, rows from back(+Y) to front: " % (len(objs), size, pitch) + " | ".join(f"{mod(o[0]):+.0f}%" for o in objs))
 
+def stl_mesh(path):
+    """binary STL -> (verts, tris) with shared vertices"""
+    import struct
+    f = open(path, "rb"); f.read(80); n = struct.unpack("<I", f.read(4))[0]
+    idx, vs, ts = {}, [], []
+    for _ in range(n):
+        v = struct.unpack("<12f", f.read(50)[:48]); tri = []
+        for j in range(3):
+            key = (round(v[3+3*j], 5), round(v[4+3*j], 5), round(v[5+3*j], 5))
+            if key not in idx: idx[key] = len(vs); vs.append(key)
+            tri.append(idx[key])
+        ts.append(tuple(tri))
+    return vs, ts
+
+def temp_plate(base, out, stl, t_hi, t_lo):
+    """temperature tower project: hottest block at the bottom, -5 °C per 10 mm (wizard convention)"""
+    vs, ts = stl_mesh(stl)
+    per_obj = lambda name: {"brim_type": "outer_only"}
+    cfg_sets = {}
+    build(base, out, [("temp_tower_%d_%d" % (t_hi, t_lo), vs, ts, (BED/2, BED/2))], per_obj, cfg_sets, "Temperature tower %d-%d" % (t_hi, t_lo))
+    # filament temps live in list-type keys: set both to t_hi and mark them modified on the filament tab
+    files = _read_zip(out); cfg = json.loads(files["Metadata/project_settings.config"])
+    for k in ("nozzle_temperature", "nozzle_temperature_initial_layer"): cfg[k] = [str(t_hi)]
+    diff = cfg.get("different_settings_to_system") or ["", "", ""]; diff[1] = "nozzle_temperature;nozzle_temperature_initial_layer"
+    cfg["different_settings_to_system"] = diff
+    # temperature steps as per-layer custom G-code, so Studio's own Slice keeps them (no post-injection needed)
+    layers = "".join(f'  <layer top_z="{10*j + 0.2:.2f}" type="4" extruder="1" color="" extra="M104 S{t_hi - 5*j}" gcode="M104 S{t_hi - 5*j}"/>\n' for j in range(1, (t_hi - t_lo)//5 + 1))
+    files["Metadata/custom_gcode_per_layer.xml"] = ('<?xml version="1.0" encoding="utf-8"?>\n<custom_gcodes_per_layer>\n <plate>\n  <plate_info id="1"/>\n' + layers + '  <mode value="SingleExtruder"/>\n </plate>\n</custom_gcodes_per_layer>\n').encode()
+    files["Metadata/project_settings.config"] = json.dumps(cfg, indent=4, ensure_ascii=False).encode(); _write_zip(out, files)
+    print("blocks:", (t_hi - t_lo)//5 + 1, "| block j (from bed) = %d - 5*j °C | custom_gcode_per_layer.xml written" % t_hi)
+
+def inject_temps(sliced, t_hi, block_mm=10.0):
+    """after CLI slicing: M104 at every block boundary of the tower gcode; refresh the md5"""
+    import hashlib
+    files = _read_zip(sliced); g = files["Metadata/plate_1.gcode"].decode("utf8", "ignore").splitlines()
+    out, cur, n = [], None, 0
+    for line in g:
+        out.append(line)
+        if line.startswith("; Z_HEIGHT:"):
+            z = float(line.split(":")[1]); t = t_hi - 5 * int((z - 0.001) // block_mm)
+            if t != cur: out.append(f"M104 S{t} ; temp tower block"); cur = t; n += 1
+    data = ("\n".join(out) + "\n").encode()
+    files["Metadata/plate_1.gcode"] = data; files["Metadata/plate_1.gcode.md5"] = hashlib.md5(data).hexdigest().upper().encode()
+    _write_zip(sliced, files); print("M104 inserted:", n, "times; md5 refreshed")
+
 def fix_sliced(path, model_id="N1"):
     """CLI export leaves printer_model_id empty in slice_info.config; the printer wants it (A1 mini = N1)."""
     f = _read_zip(path); s = f["Metadata/slice_info.config"].decode()
@@ -108,4 +155,6 @@ if __name__ == "__main__":
     if a[0] == "flow1": flow_plate(a[1], a[2], 1)
     elif a[0] == "flow2": flow_plate(a[1], a[2], 2, float(a[3]))
     elif a[0] == "fix-sliced": fix_sliced(a[1], a[2] if len(a) > 2 else "N1")
+    elif a[0] == "temp": temp_plate(a[1], a[2], a[3], int(a[4]), int(a[5]))
+    elif a[0] == "inject-temps": inject_temps(a[1], int(a[2]))
     else: print(__doc__)
