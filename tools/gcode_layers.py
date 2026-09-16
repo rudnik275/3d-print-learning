@@ -4,7 +4,7 @@ distance/feedrate estimate), objects printed on the layer, extrusion per object,
 Use it to see where layer time jumps (a neighbour object ends, geometry changes) — the usual
 source of horizontal bands. Reads a plain .gcode or the Metadata/plate_N.gcode inside a sliced .3mf.
 
-Usage: gcode_layers.py <file.gcode|sliced.3mf> [--csv out.csv]"""
+Usage: gcode_layers.py <file.gcode|sliced.3mf> [--csv out.csv] [--object <label>] [--totals]"""
 import math, re, sys, zipfile
 
 def read(path):
@@ -70,6 +70,12 @@ def main():
         nxt = next((M["m73_r"] for M in layers[i + 1:] if M["m73_r"] is not None), None)
         L["m73_dt"] = (L["m73_r"] - nxt) * 60 if (L["m73_r"] is not None and nxt is not None) else None
     print(f"file: {path}\nobjects (label: max height): {objh}\nlayers: {len(layers)}\n")
+    if "--totals" in sys.argv:   # per-object total extrusion, relative to the median (flow-rate plates)
+        tot = {}
+        for L in layers:
+            for k, v in L["objs"].items(): tot[k] = tot.get(k, 0.0) + v
+        vals = sorted(tot.items(), key=lambda x: x[1]); mid = vals[len(vals)//2][1] if vals else 1
+        print("per-object E (mm) relative to median: " + "  ".join(f"{k}:{v/mid:.2f}" for k, v in vals)); return
     if only:
         print(f"object {only}: {'n':>3} {'z':>6} {'E_mm':>6} {'t_obj':>6} {'t_layer':>7} {'fan':>3}")
         pe = None
