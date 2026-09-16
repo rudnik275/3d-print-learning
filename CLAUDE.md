@@ -21,7 +21,7 @@
 - Автосейв живёт только пока проект открыт — всё, что понадобится позже, сразу копировать в `prints/`.
 - `tools/bbs_resolve.py <filament|process|machine> "<имя>" [ключи]` — полный пресет с раскрытым `inherits`; файлы в `user/` хранят только overrides.
 - Глобально активные пресеты и тип стола — `~/Library/Application Support/BambuStudio/BambuStudio.conf` (JSON, ключи `presets.*`, `app.curr_bed_type`). Читать по ключам: в файле лежит `access_code` принтера.
-- `tools/bbs_screenshot.sh` — скриншот окна; нужно разрешение «Запись экрана» процессу `claude`.
+- `tools/bbs_screenshot.sh` — скриншот экрана через `tools/ScreenGrab.app` (обёртка над screencapture: macOS даёт «Запись экрана» только .app-бандлам); один раз включить ScreenGrab в Системных настройках.
 - Менять настройки: вариант проекта (`bbs_project.py variant --set`), а не инструкции по UI; постоянные изменения — JSON-пресетом в `profiles/user/` через Import Configs в Studio. Файлы в `user/` под запущенной Studio перезаписывает облачная синхронизация.
 - Слайсинг без UI для проверки: `/Applications/BambuStudio.app/Contents/MacOS/BambuStudio --help`.
 - Access code и serial принтера — только в 1Password, через `with-secrets`.
