@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Minimal client for Fusion's built-in MCP server (127.0.0.1:27182/mcp).
-Usage: fmcp.py tools            -> list tools
-       fmcp.py read <what>      -> fusion_mcp_read (e.g. documents, screenshot)
-       fmcp.py run <script.py>  -> fusion_mcp_execute featureType=script (must define run(_context))"""
+Usage: fmcp.py tools                        -> list tools
+       fmcp.py read <queryType> [k=v ...]   -> fusion_mcp_read (document, screenshot direction=front, activeCommand, ...)
+       fmcp.py run <script.py> [--readonly] -> fusion_mcp_execute featureType=script; script must define run(_context);
+                                               --readonly for inspection scripts (allowed even with a dialog open)"""
 import json, sys, urllib.request
 URL = "http://127.0.0.1:27182/mcp"
 SID = None
@@ -31,9 +32,11 @@ if __name__ == "__main__":
         r = call("tools/list", {}, 2)
         for t in r["result"]["tools"]: print("-", t["name"], ":", (t.get("description") or "")[:160].replace("\n", " "))
     elif cmd == "read":
-        r = call("tools/call", {"name": "fusion_mcp_read", "arguments": {"what": sys.argv[2]}}, 2)
-        print(json.dumps(r, indent=1)[:4000])
+        args = {"queryType": sys.argv[2], **dict(a.split("=", 1) for a in sys.argv[3:])}
+        r = call("tools/call", {"name": "fusion_mcp_read", "arguments": args}, 2)
+        print(json.dumps(r.get("result", r), indent=1, ensure_ascii=False)[:6000])
     elif cmd == "run":
         code = open(sys.argv[2]).read()
-        r = call("tools/call", {"name": "fusion_mcp_execute", "arguments": {"featureType": "script", "code": code}}, 2)
-        print(json.dumps(r, indent=1)[:6000])
+        r = call("tools/call", {"name": "fusion_mcp_execute", "arguments": {"featureType": "script", "object": {"script": code, "readOnly": "--readonly" in sys.argv}}}, 2)
+        for c in r.get("result", {}).get("content", []): print(c.get("text", c))
+        if "error" in r: print("ERROR:", r["error"])
