@@ -1,0 +1,15 @@
+project : /Users/rudnikdmitriy/.claude/jobs/6bc36509/tmp/duck-a1mini-sunlu-pla.3mf
+machine : Bambu Lab A1 mini 0.4 nozzle
+process : 0.20mm Standard @BBL A1M
+filament: SUNLU PLA @BBL A1M   (type PLA)
+bed     : Textured PEI Plate
+objects :
+  [2] Hollow Skeleton Duck.stl_A  src=-  faces=1904555
+plate   : {'plater_id': '1', 'plater_name': '1 Color', 'filament_map_mode': 'Auto For Flush'}
+
+--- differs from base presets ---
+  enable_support: 0  ->  1
+  support_on_build_plate_only: 0  ->  1
+  wall_loops: 2  ->  4
+  (3 keys)
+--- project-only keys (133): accel_to_decel_enable, accel_to_decel_factor, apply_scarf_seam_on_circles, apply_top_surface_compensation, auto_disable_filter_on_overheat, bed_custom_model, bed_custom_texture, bed_temperature_formula, bridge_angle, brim_type, curr_bed_type, default_filament_colour, default_jerk, detect_narrow_internal_solid_infill, different_settings_to_system, embedding_wall_into_infill, enable_overhang_bridge_fan, enable_pressure_advance, enforce_support_layers, ensure_vertical_shell_thickness, exclude_object, extruder_ams_count, extruder_nozzle_stats, filament_change_length_nc, filament_colour, filament_colour_type, filament_map, filament_map_mode, filament_multi_colour, filament_nozzle_map, filament_self_index, filament_volume_map, filter_out_gap_fill, first_layer_print_sequence, first_x_layer_fan_speed, flush_into_infill, flush_into_objects, flush_into_support, flush_multiplier, flush_volumes_matrix ...
