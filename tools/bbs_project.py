@@ -64,9 +64,13 @@ def variant(inp, out, keep=None, sets=(), title=None):
         bases = [resolve("process", cfg.get("print_settings_id", "")), resolve("filament", fil), resolve("machine", cfg.get("printer_settings_id", ""))]
         diff = cfg.get("different_settings_to_system") or ["", "", ""]
         for k, v in sets:
-            for i, b in enumerate(bases):
-                if k in b and str(b[k][0] if isinstance(b[k], list) else b[k]) != str(v):
-                    keys = [x for x in diff[i].split(";") if x]; keys.append(k) if k not in keys else None; diff[i] = ";".join(keys)
+            hit = [i for i, b in enumerate(bases) if k in b]
+            i = hit[0] if hit else 0                       # keys absent from every base (project-only) count as process
+            base_v = bases[i].get(k); base_v = base_v[0] if isinstance(base_v, list) else base_v
+            if base_v is None or str(base_v) != str(v):
+                keys = [x for x in diff[i].split(";") if x]
+                if k not in keys: keys.append(k)
+                diff[i] = ";".join(keys)
         cfg["different_settings_to_system"] = diff; print("different_settings_to_system =", diff)
         files["Metadata/project_settings.config"] = json.dumps(cfg, indent=4, ensure_ascii=False).encode()
     _write_zip(out, files); print("written:", out)
