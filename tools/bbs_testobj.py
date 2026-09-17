@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Put a synthetic test object into an existing single-object project, keeping its presets and overrides.
 
-  bbs_testobj.py pillars <container.3mf> <out.3mf> [--n 6] [--d 6] [--h 12] [--gap 12] [--segs 96] [--at 90,90]
+  bbs_testobj.py pillars <container.3mf> <out.3mf> [--n 6] [--d 6] [--h 12] [--gap 12] [--segs 96] [--at 90,90] [--ballast 45]
 
 pillars: N cylinders in a row — many small closed loops per layer with travel between them, the
 same load as thin organic features (rib bones): the cheap stand-in for a 4-hour print when hunting
@@ -24,10 +24,22 @@ def cylinder(cx, cy, d, h, segs, v0):
         ts += [(cb, b1, b0), (ct, t0, t1)]            # caps
     return vs, ts
 
-def pillars(n, d, h, gap, segs, at):
+def box(cx, cy, w, h, v0):
+    x0, x1, y0, y1 = cx - w / 2, cx + w / 2, cy - w / 2, cy + w / 2
+    vs = [(x0, y0, 0), (x1, y0, 0), (x1, y1, 0), (x0, y1, 0), (x0, y0, h), (x1, y0, h), (x1, y1, h), (x0, y1, h)]
+    q = [(0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7), (3, 2, 1, 0), (4, 5, 6, 7)]     # sides outward, bottom, top
+    ts = []
+    for a, b, c, d in q: ts += [(v0 + a, v0 + b, v0 + c), (v0 + a, v0 + c, v0 + d)]
+    return vs, ts
+
+def pillars(n, d, h, gap, segs, at, ballast=0.0):
+    """ballast: a W×W×h block behind the row — enough work per layer that the cooling slowdown
+    (slow_down_layer_time) never kicks in, so the pillars print at the commanded speeds"""
     vs = []; ts = []; x0 = at[0] - (n - 1) * gap / 2
     for i in range(n):
         v, t = cylinder(x0 + i * gap, at[1], d, h, segs, len(vs)); vs += v; ts += t
+    if ballast:
+        v, t = box(at[0], at[1] + d / 2 + 12 + ballast / 2, ballast, h, len(vs)); vs += v; ts += t
     return vs, ts
 
 def main():
@@ -36,8 +48,8 @@ def main():
     kind, inp, out = a[0], a[1], a[2]
     if kind != "pillars": raise SystemExit("only 'pillars' for now")
     n, d, h, gap, segs = opt("--n", 6), opt("--d", 6.0), opt("--h", 12.0), opt("--gap", 12.0), opt("--segs", 96)
-    at = tuple(float(v) for v in opt("--at", "90,90").split(","))
-    vs, ts = pillars(n, d, h, gap, segs, at)
+    at = tuple(float(v) for v in opt("--at", "90,90").split(",")); ballast = opt("--ballast", 0.0)
+    vs, ts = pillars(n, d, h, gap, segs, at, ballast)
     files = _read_zip(inp); model = files["3D/3dmodel.model"].decode(); ms = files["Metadata/model_settings.config"].decode()
     comp = re.search(r'<object id="(\d+)" [^>]*>\s*<components>\s*<component p:path="([^"]+)"', model, re.S)
     if not comp: raise SystemExit("container must be a project with one component object (3D/Objects/*.model)")
