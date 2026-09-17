@@ -114,6 +114,17 @@ def retarget(inp, out, machine, process=None, filament=None, bed=None):
     for base in (m, p, f):
         for k, v in base.items():
             if k not in _PRESET_META: cfg[k] = v
+    # Studio 2.x hides the real BBL machine G-code: the system machine JSON has no machine_start_gcode and the
+    # resolver falls through to fdm_machine_common's Ender-style placeholder (M109 S205, purge line to Y200).
+    # Printing with it = wrong temperature, no nozzle wipe, purge off the bed (2026-09-17). Trusted blobs live in
+    # profiles/baseline/machine-gcode-<slug>.json, snapshotted from a Studio-made project for that printer.
+    slug = machine.replace("Bambu Lab ", "").replace(" 0.4 nozzle", "").replace(" ", "")
+    gpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "profiles", "baseline", f"machine-gcode-{slug}.json")
+    if not os.path.exists(gpath): raise SystemExit(f"no trusted machine G-code for '{machine}': {gpath} (snapshot it from a Studio-made project first)")
+    g = json.load(open(gpath))
+    for k, v in g.items():
+        if k.endswith("_gcode") and v is not None: cfg[k] = v
+    print("gcode  : machine blobs from", os.path.relpath(gpath), f"(start {len(g['machine_start_gcode'])} chars)")
     # per-filament lists the old printer left behind in project-only keys (P1S carries two extruder
     # variants → 2-element lists): we print with one filament, so cut those to the first value
     for k, v in list(cfg.items()):

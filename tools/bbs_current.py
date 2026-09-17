@@ -80,7 +80,7 @@ def main():
             if k in GCODE: g.append(k); continue
             n += 1
             print(f"  {k}: {norm(base[k])[:60]}  ->  {norm(proj[k])[:80]}")
-    print(f"  ({n} keys)" + (f"; gcode blobs differ (stale copy in project, harmless): {', '.join(g)}" if g else ""))
+    print(f"  ({n} keys)" + (f"; gcode blobs differ from resolved base — expected: the base only has fdm_machine_common's placeholder (Studio hides BBL G-code), the project copy is the real one, keep it: {', '.join(g)}" if g else ""))
     only = [k for k in proj if k not in base and k not in SKIP]
     print(f"--- project-only keys ({len(only)}): " + ", ".join(sorted(only)[:40]) + (" ..." if len(only) > 40 else ""))
 main()
