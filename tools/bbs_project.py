@@ -7,6 +7,11 @@
                                              keep only these object ids (as in model_settings.config),
                                              override settings in Metadata/project_settings.config
   show <in.3mf>                              objects and their ids
+  retarget <in.3mf> <out.3mf> --machine M [--process P] [--filament F] [--bed B]
+                                             move a foreign project (MakerWorld, another printer) onto our
+                                             presets: the full preset values are written into the project,
+                                             the author's *process* overrides (different_settings_to_system)
+                                             are kept, their filament/machine overrides are dropped
 
 Values for --set are written as strings; list-type keys (filament ones) take a single value."""
 import json, os, re, sys, zipfile
@@ -75,10 +80,60 @@ def variant(inp, out, keep=None, sets=(), title=None):
         files["Metadata/project_settings.config"] = json.dumps(cfg, indent=4, ensure_ascii=False).encode()
     _write_zip(out, files); print("written:", out)
 
+# keys that describe a preset file, not a printing setting — never copied into a project
+_PRESET_META = {"name", "from", "version", "inherits", "instantiation", "type", "setting_id", "description",
+                "filament_id", "compatible_printers", "compatible_printers_condition", "compatible_prints",
+                "compatible_prints_condition", "print_settings_id", "filament_settings_id", "printer_settings_id",
+                "is_custom_defined", "_chain"}
+
+def retarget(inp, out, machine, process=None, filament=None, bed=None):
+    from bbs_resolve import resolve
+    files = _read_zip(inp); cfg = json.loads(files["Metadata/project_settings.config"])
+    m = resolve("machine", machine)
+    process = process or m["default_print_profile"]
+    dfp = m["default_filament_profile"]; filament = filament or (dfp[0] if isinstance(dfp, list) else dfp)
+    p = resolve("process", process); f = resolve("filament", filament)
+    for kind, base in (("process", p), ("filament", f)):
+        cps = base.get("compatible_printers") or []
+        if cps and machine not in cps: raise SystemExit(f"{kind} preset '{base['name']}' is not for '{machine}': {cps}")
+
+    # author's overrides live in different_settings_to_system = [process; filament; machine] (";"-joined).
+    # Process tweaks describe the model (walls, supports) — keep; filament/machine ones describe their setup — drop.
+    diff = cfg.get("different_settings_to_system") or ["", "", ""]
+    keep = [k for k in diff[0].split(";") if k and k in p]
+    author = {k: cfg[k] for k in keep if k in cfg}
+    dropped = [k for k in diff[0].split(";") if k and k not in p] + [k for k in (diff[1] + ";" + diff[2]).split(";") if k]
+    print("was    :", cfg.get("printer_settings_id"), "/", cfg.get("print_settings_id"), "/", cfg.get("filament_settings_id"))
+    print("author :", author or "(no process overrides)")
+    if dropped: print("dropped:", dropped)
+
+    for base in (m, p, f):
+        for k, v in base.items():
+            if k not in _PRESET_META: cfg[k] = v
+    # per-filament lists the old printer left behind in project-only keys (P1S carries two extruder
+    # variants → 2-element lists): we print with one filament, so cut those to the first value
+    for k, v in list(cfg.items()):
+        if k.startswith("filament_") and isinstance(v, list) and len(v) > 1 and not any(k in b for b in (m, p, f)) \
+           and k not in ("filament_map", "filament_colour"):
+            cfg[k] = v[:1]
+    cfg.update(author)
+    cfg["printer_settings_id"] = machine; cfg["print_settings_id"] = process; cfg["filament_settings_id"] = [filament]
+    cfg["print_compatible_printers"] = p.get("compatible_printers") or [machine]
+    if f.get("filament_id"): cfg["filament_ids"] = [f["filament_id"]]
+    if bed: cfg["curr_bed_type"] = bed
+    cfg["different_settings_to_system"] = [";".join(keep), "", ""]
+    files["Metadata/project_settings.config"] = json.dumps(cfg, indent=4, ensure_ascii=False).encode()
+    _write_zip(out, files)
+    print("now    :", machine, "/", process, "/", filament, "/ bed:", cfg.get("curr_bed_type"))
+    print("different_settings_to_system =", cfg["different_settings_to_system"]); print("written:", out)
+
 if __name__ == "__main__":
     a = sys.argv[1:]
     if a[0] == "assemble": assemble(a[1], a[2])
     elif a[0] == "show": show(a[1])
+    elif a[0] == "retarget":
+        opt = lambda n: a[a.index(n) + 1] if n in a else None
+        retarget(a[1], a[2], opt("--machine"), opt("--process"), opt("--filament"), opt("--bed"))
     elif a[0] == "variant":
         keep = a[a.index("--keep") + 1].split(",") if "--keep" in a else None
         title = a[a.index("--title") + 1] if "--title" in a else None

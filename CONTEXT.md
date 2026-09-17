@@ -10,11 +10,11 @@
 
 ## Филаменты (инвентарь 14.09.2026)
 
-SUNLU PLA Bone White, PLA Beige, PLA Matte Grey, PLA Matte Oak, PETG Olive Green — все 1.75 мм. Отдельного пресета под свой SUNLU PLA нет: печать идёт на системном `SUNLU PLA+ @BBL A1M`.
+SUNLU PLA Bone White, PLA Beige, PLA Matte Grey, PLA Matte Oak, PETG Olive Green — все 1.75 мм. PLA Bone White / Beige печатаются на калиброванном `SUNLU PLA @BBL A1M` (таблица ниже); Matte — на системном `SUNLU PLA Matte @BBL A1M`, PETG — на `SUNLU PETG Olive Green @BBL A1M` (оба не калибровались).
 
 ## Пресеты Studio на диске
 
-- Пользовательские: `SUNLU PETG Olive Green @BBL A1M` (клон `Generic PETG @BBL A1M` без изменений); `Gridfinity PETG 0.20 A1 mini` (`0.20mm Standard` + wall_loops 3, bottom 5, gyroid).
+- Пользовательские: `SUNLU PLA @BBL A1M` (калибровка, `profiles/user/`); `SUNLU PETG Olive Green @BBL A1M` (клон `Generic PETG @BBL A1M` без изменений); `Gridfinity PETG 0.20 A1 mini` (`0.20mm Standard` + wall_loops 3, bottom 5, gyroid).
 - Базовые значения: `profiles/baseline/*.json` (полностью раскрытые).
   - `SUNLU PLA+ @BBL A1M`: 220 °C / стол 65, MVS 12, flow 1.0, fan 60–80 %, min layer time 6 с.
   - `Generic PETG @BBL A1M`: 255 °C / стол 70, MVS 8, flow 0.95, fan 40–90 %, min layer time 12 с.
