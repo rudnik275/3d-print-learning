@@ -53,6 +53,18 @@ def summary(acc, z):
             worst = sorted(items, key=lambda t: -t[1][6])[:3]
             line += f"  tiny {tiny}/{seg} seg; worst L" + ", L".join(f"{l}(z{z.get(l, 0):.1f}:{a[6]})" for l, a in worst)
         print(line)
+    # contour events on the outer wall: a one-layer jump in segment count = wall printed across an opening
+    # (the slicer does not call it a bridge); a lasting jump with an E drop = contour splits (opening starts)
+    ow = {l: a for l, a in by.get("Outer wall", [])}
+    events = []
+    for l in sorted(ow):
+        p, n = ow.get(l - 1), ow.get(l + 1)
+        if not p: continue
+        if ow[l][5] >= 1.5 * p[5] and n and n[5] < 0.8 * ow[l][5]:
+            events.append(f"L{l} z{z.get(l, 0):.1f}: стенка над проёмом ({ow[l][5]} сегм. vs {p[5]})")
+        elif ow[l][5] >= 1.4 * p[5] and ow[l][4] < 0.9 * p[4]:
+            events.append(f"L{l} z{z.get(l, 0):.1f}: контур рвётся ({p[5]}→{ow[l][5]} сегм., E {p[4]:.1f}→{ow[l][4]:.1f})")
+    print("\nOuter wall events    " + ("; ".join(events) if events else "—"))
 
 if __name__ == "__main__":
     acc, z = parse(sys.argv[1])
