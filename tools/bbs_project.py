@@ -12,6 +12,9 @@
                                              presets: the full preset values are written into the project,
                                              the author's *process* overrides (different_settings_to_system)
                                              are kept, their filament/machine overrides are dropped
+  gcode3mf <in.gcode.3mf> <out.gcode.3mf>    turn a CLI slice export into what Studio calls a sliced file:
+                                             geometry stripped, plate points at the G-code — Studio then opens
+                                             it in Preview with "Print plate" active instead of as a project
 
 Values for --set are written as strings; list-type keys (filament ones) take a single value."""
 import json, os, re, sys, zipfile
@@ -128,10 +131,36 @@ def retarget(inp, out, machine, process=None, filament=None, bed=None):
     print("now    :", machine, "/", process, "/", filament, "/ bed:", cfg.get("curr_bed_type"))
     print("different_settings_to_system =", cfg["different_settings_to_system"]); print("written:", out)
 
+def gcode3mf(inp, out):
+    """Studio's own "export sliced file" carries no mesh: <resources/> <build/> and a model_settings.config with
+    only the <plate> block. With a mesh present it loads the file as a project (Prepare, Print greyed)."""
+    files = _read_zip(inp)
+    if "Metadata/plate_1.gcode" not in files: raise SystemExit("no Metadata/plate_1.gcode — slice first (--slice 0 --export-3mf)")
+    for n in [k for k in files if k.startswith("3D/Objects/") or k.startswith("3D/_rels/")]: files.pop(n)
+    model = files["3D/3dmodel.model"].decode()
+    model = re.sub(r'\s+xmlns:p="[^"]*"', "", model); model = re.sub(r'\s+requiredextensions="p"', "", model)
+    model = re.sub(r"<resources>.*</resources>", "<resources>\n </resources>", model, flags=re.S)
+    model = re.sub(r"<build[^>]*>.*</build>|<build/>", "<build/>", model, flags=re.S)
+    files["3D/3dmodel.model"] = model.encode()
+    ms = files["Metadata/model_settings.config"].decode()
+    plates = re.findall(r"<plate>.*?</plate>", ms, re.S)
+    keep = []
+    for p in plates:
+        p = re.sub(r"\s*<model_instance>.*?</model_instance>", "", p, flags=re.S)
+        m = re.search(r'key="plater_id" value="(\d+)"', p); i = m.group(1) if m else "1"
+        if "pattern_bbox_file" not in p:
+            p = p.replace("</plate>", f'  <metadata key="pattern_bbox_file" value="Metadata/plate_{i}.json"/>\n  </plate>')
+        keep.append(p)
+    files["Metadata/model_settings.config"] = ('<?xml version="1.0" encoding="UTF-8"?>\n<config>\n  ' + "\n  ".join(keep) + "\n</config>\n").encode()
+    si = files.get("Metadata/slice_info.config")
+    if si: files["Metadata/slice_info.config"] = si.replace(b'key="printer_model_id" value=""', b'key="printer_model_id" value="N1"')
+    _write_zip(out, files); print("gcode-only 3mf:", out, "plates:", len(keep))
+
 if __name__ == "__main__":
     a = sys.argv[1:]
     if a[0] == "assemble": assemble(a[1], a[2])
     elif a[0] == "show": show(a[1])
+    elif a[0] == "gcode3mf": gcode3mf(a[1], a[2])
     elif a[0] == "retarget":
         opt = lambda n: a[a.index(n) + 1] if n in a else None
         retarget(a[1], a[2], opt("--machine"), opt("--process"), opt("--filament"), opt("--bed"))
