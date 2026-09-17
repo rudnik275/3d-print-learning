@@ -99,10 +99,11 @@ def retarget(inp, out, machine, process=None, filament=None, bed=None):
 
     # author's overrides live in different_settings_to_system = [process; filament; machine] (";"-joined).
     # Process tweaks describe the model (walls, supports) — keep; filament/machine ones describe their setup — drop.
+    # keys like precise_outer_wall live only in the project (Studio defaults, absent from preset files) — keep those too
     diff = cfg.get("different_settings_to_system") or ["", "", ""]
-    keep = [k for k in diff[0].split(";") if k and k in p]
-    author = {k: cfg[k] for k in keep if k in cfg}
-    dropped = [k for k in diff[0].split(";") if k and k not in p] + [k for k in (diff[1] + ";" + diff[2]).split(";") if k]
+    keep = [k for k in diff[0].split(";") if k and k in cfg]
+    author = {k: cfg[k] for k in keep}
+    dropped = [k for k in diff[0].split(";") if k and k not in cfg] + [k for k in (diff[1] + ";" + diff[2]).split(";") if k]
     print("was    :", cfg.get("printer_settings_id"), "/", cfg.get("print_settings_id"), "/", cfg.get("filament_settings_id"))
     print("author :", author or "(no process overrides)")
     if dropped: print("dropped:", dropped)
