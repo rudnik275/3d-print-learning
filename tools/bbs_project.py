@@ -12,6 +12,9 @@
                                              presets: the full preset values are written into the project,
                                              the author's *process* overrides (different_settings_to_system)
                                              are kept, their filament/machine overrides are dropped
+  move <in.3mf> <out.3mf> --at x,y [--id N]  put an object's footprint centre at (x, y) on the bed — foreign
+                                             projects sit in their printer's coordinates (H2S: x up to 350),
+                                             on the 180 mm A1 mini that slices as "outside"; default: first item
   gcode3mf <in.gcode.3mf> <out.gcode.3mf>    turn a CLI slice export into what Studio calls a sliced file:
                                              geometry stripped, plate points at the G-code — Studio then opens
                                              it in Preview with "Print plate" active instead of as a project
@@ -104,6 +107,7 @@ def retarget(inp, out, machine, process=None, filament=None, bed=None):
     # Process tweaks describe the model (walls, supports) — keep; filament/machine ones describe their setup — drop.
     # keys like precise_outer_wall live only in the project (Studio defaults, absent from preset files) — keep those too
     diff = cfg.get("different_settings_to_system") or ["", "", ""]
+    old_n = len(cfg.get("filament_settings_id") or [1])   # the author's filament count (AMS projects: 4)
     keep = [k for k in diff[0].split(";") if k and k in cfg]
     author = {k: cfg[k] for k in keep}
     dropped = [k for k in diff[0].split(";") if k and k not in cfg] + [k for k in (diff[1] + ";" + diff[2]).split(";") if k]
@@ -125,12 +129,15 @@ def retarget(inp, out, machine, process=None, filament=None, bed=None):
     for k, v in g.items():
         if k.endswith("_gcode") and v is not None: cfg[k] = v
     print("gcode  : machine blobs from", os.path.relpath(gpath), f"(start {len(g['machine_start_gcode'])} chars)")
-    # per-filament lists the old printer left behind in project-only keys (P1S carries two extruder
-    # variants → 2-element lists): we print with one filament, so cut those to the first value
+    # per-filament lists the author's setup left behind in project-only keys: P1S carries two extruder
+    # variants (2-element lists), an AMS project carries one value per filament (4 — filament_colour,
+    # filament_map, pressure_advance, fan keys, a 4×4 flush matrix). We print with one filament, so every
+    # project-only list of the author's filament count is cut to its first value — otherwise Studio shows
+    # four filament slots for a one-filament plate (branch stand, 2026-09-18)
     for k, v in list(cfg.items()):
-        if k.startswith("filament_") and isinstance(v, list) and len(v) > 1 and not any(k in b for b in (m, p, f)) \
-           and k not in ("filament_map", "filament_colour"):
-            cfg[k] = v[:1]
+        if not isinstance(v, list) or len(v) < 2 or any(k in b for b in (m, p, f)): continue
+        if k == "flush_volumes_matrix": cfg[k] = ["0"]
+        elif len(v) == old_n or k.startswith("filament_"): cfg[k] = v[:1]
     cfg.update(author)
     cfg["printer_settings_id"] = machine; cfg["print_settings_id"] = process; cfg["filament_settings_id"] = [filament]
     cfg["print_compatible_printers"] = p.get("compatible_printers") or [machine]
@@ -141,6 +148,25 @@ def retarget(inp, out, machine, process=None, filament=None, bed=None):
     _write_zip(out, files)
     print("now    :", machine, "/", process, "/", filament, "/ bed:", cfg.get("curr_bed_type"))
     print("different_settings_to_system =", cfg["different_settings_to_system"]); print("written:", out)
+
+def move(inp, out, at, oid=None):
+    """shift a build item's translation so its footprint centre lands at `at` (mesh read with all transforms)"""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from mesh_slopes import load
+    files = _read_zip(inp); model = files["3D/3dmodel.model"].decode()
+    items = re.findall(r'<item objectid="(\d+)"', model)
+    oid = oid or items[0]
+    vs = [v for name, verts, _ in load(inp) if name.split()[1].split("/")[0] == oid for v in verts]
+    if not vs: raise SystemExit(f"no mesh for item {oid}; items: {items}")
+    cx = (min(v[0] for v in vs) + max(v[0] for v in vs)) / 2; cy = (min(v[1] for v in vs) + max(v[1] for v in vs)) / 2
+    dx, dy = at[0] - cx, at[1] - cy
+    def shift(m):
+        t = m.group(2).split(); t[9] = f"{float(t[9]) + dx:.6f}"; t[10] = f"{float(t[10]) + dy:.6f}"
+        return m.group(1) + " ".join(t) + m.group(3)
+    model, n = re.subn(r'(<item objectid="%s" [^>]*transform=")([^"]+)(")' % oid, shift, model)
+    if n != 1: raise SystemExit(f"item {oid}: transform not found")
+    files["3D/3dmodel.model"] = model.encode(); _write_zip(out, files)
+    print(f"moved item {oid}: centre ({cx:.1f}, {cy:.1f}) -> ({at[0]:g}, {at[1]:g}), shift ({dx:+.1f}, {dy:+.1f}); written: {out}")
 
 def gcode3mf(inp, out):
     """Studio's own "export sliced file" carries no mesh: <resources/> <build/> and a model_settings.config with
@@ -172,6 +198,9 @@ if __name__ == "__main__":
     if a[0] == "assemble": assemble(a[1], a[2])
     elif a[0] == "show": show(a[1])
     elif a[0] == "gcode3mf": gcode3mf(a[1], a[2])
+    elif a[0] == "move":
+        at = tuple(float(v) for v in a[a.index("--at") + 1].split(","))
+        move(a[1], a[2], at, a[a.index("--id") + 1] if "--id" in a else None)
     elif a[0] == "retarget":
         opt = lambda n: a[a.index(n) + 1] if n in a else None
         retarget(a[1], a[2], opt("--machine"), opt("--process"), opt("--filament"), opt("--bed"))
