@@ -49,6 +49,7 @@ description: Подобрать настройки и подготовить м�
 
 Всегда:
 - `--set resolution=0.004 --set slice_closing_radius=0.01`, `enable_arc_fitting` оставить 1 (ADR-0003);
+- `--set wall_loops=3 --set precise_outer_wall=1`, генератор стенок classic (ADR-0004): третья стенка убирает валик на высотах сплошных слоёв, Arachne портит мелочи — только по явной просьбе; авторские стенки чужого проекта, если их больше трёх, не трогать;
 - `--set reduce_crossing_wall=1 --set max_travel_detour_distance=300` — сопло не таскает каплю через наружную стенку;
 - паттерн верха под форму: круглое → `top_surface_pattern=concentric`, остальное — monotonic.
 
