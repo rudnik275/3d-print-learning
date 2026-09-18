@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """Where a model will show layer stair-steps: shallow slopes per height band, straight from the mesh.
 
-  mesh_slopes.py <project.3mf | model.stl> [--layer 0.2] [--angle 25] [--band 1]
+  mesh_slopes.py <project.3mf | model.stl> [--layer 0.2] [--band 1] [--wmin 0.3] [--wmax 2.0] [--min 20]
 
-A surface tilted θ from horizontal prints as steps of width layer_height / tan θ; below ~25° at 0.2 mm
-(~17° at 0.12) the steps read as contour lines ("topographic map" on ribs, backs, domes). Speed,
-temperature and resolution do not change this — only a thinner layer where the slope is shallow
-(variable layer height) or another orientation.
+A surface tilted θ from horizontal prints as steps of width layer_height / tan θ. Steps read as contour
+lines ("topographic map" on ribs, backs, domes) when that width is between --wmin and --wmax (0.3–2 mm):
+narrower is ordinary layer texture, wider is a terrace the eye takes for design (Benchy roof at 4.5°:
+2.5 mm terraces, no visible steps — 2026-09-18). Speed, temperature and resolution do not change this —
+only a thinner layer where the slope is shallow (variable layer height) or another orientation.
 
-Per band of z: face area, area of shallow faces (tilt < --angle, excluding flat top/bottom faces, which
-print as solid layers, not steps), share, and the step width for the shallowest face of the band.
+Per band of z: face area, area of "stepping" faces (step width within the window), share, and the step
+width for the shallowest such face of the band.
 A band is flagged when shallow area ≥ --min mm² per 1 mm of height (default 20): a lying rod always has
 its crown shallow, so the share is small even where every rib shows contour lines — absolute area is
 what the eye sees. 3MF: Studio projects (3D/Objects/*.model components) and plain 3MF, build transforms
@@ -56,7 +57,9 @@ def load(path):
 def main():
     a = sys.argv[1:]
     opt = lambda k, d: type(d)(a[a.index(k) + 1]) if k in a else d
-    path = a[0]; lh = opt("--layer", 0.2); amax = opt("--angle", 25.0); band = opt("--band", 1.0); amin = opt("--min", 20.0)
+    path = a[0]; lh = opt("--layer", 0.2); band = opt("--band", 1.0); amin = opt("--min", 20.0)
+    wmin, wmax = opt("--wmin", 0.3), opt("--wmax", 2.0)
+    tmin = math.degrees(math.atan(lh / wmax)); tmax = math.degrees(math.atan(lh / wmin))   # tilt window for this layer
     objs = load(path)
     if not objs: raise SystemExit("no mesh found")
     z0 = min(v[2] for _, vs, _ in objs for v in vs)
@@ -71,11 +74,11 @@ def main():
             tilt = math.degrees(math.acos(min(1.0, abs(nz) / n2)))   # face angle from horizontal: 0 flat, 90 wall
             b = round(math.floor(((az + bz + cz) / 3 - z0) / band) * band, 3)
             rec = bands.setdefault(b, [0.0, 0.0, 90.0]); rec[0] += n2 / 2
-            if 0.5 < tilt < amax: rec[1] += n2 / 2; rec[2] = min(rec[2], tilt)
+            if tmin <= tilt <= tmax: rec[1] += n2 / 2; rec[2] = min(rec[2], tilt)
     tot = sum(r[0] for r in bands.values()); sh = sum(r[1] for r in bands.values())
-    print(f"{os.path.basename(path)}: {len(objs)} object(s), layer {lh} mm, shallow = tilt < {amax:g}° from horizontal, bands {band:g} mm")
-    print(f"shallow area overall: {sh:.0f} / {tot:.0f} mm² = {100 * sh / tot:.1f} %")
-    print("     z      area   shallow  share  min tilt  step width")
+    print(f"{os.path.basename(path)}: {len(objs)} object(s), layer {lh} mm, steps {wmin:g}–{wmax:g} mm wide = tilt {tmin:.1f}–{tmax:.1f}° from horizontal, bands {band:g} mm")
+    print(f"stepping area overall: {sh:.0f} / {tot:.0f} mm² = {100 * sh / tot:.1f} %")
+    print("     z      area  stepping  share  min tilt  step width")
     flagged = []
     for b in sorted(bands):
         t, s, m = bands[b]
@@ -87,7 +90,7 @@ def main():
     for lo, hi in flagged:
         if runs and abs(runs[-1][1] - lo) < 1e-6: runs[-1][1] = hi
         else: runs.append([lo, hi])
-    print("steps expected at z:", ", ".join(f"{lo:g}–{hi:g}" for lo, hi in runs) + " mm" if runs else f"none (no band with ≥ {amin:g} mm² shallow faces per mm)")
+    print("steps expected at z:", ", ".join(f"{lo:g}–{hi:g}" for lo, hi in runs) + " mm" if runs else f"none (no band with ≥ {amin:g} mm² stepping faces per mm)")
 
 if __name__ == "__main__":
     main()
