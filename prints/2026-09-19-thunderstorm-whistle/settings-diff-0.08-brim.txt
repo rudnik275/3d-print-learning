@@ -1,0 +1,14 @@
+project : prints/2026-09-19-thunderstorm-whistle/thunderstorm-v4-whistle-0.08-brim.3mf
+machine : Bambu Lab A1 mini 0.4 nozzle
+process : 0.08mm High Quality @BBL A1M
+filament: SUNLU PLA @BBL A1M   (type PLA)
+bed     : Textured PEI Plate
+objects :
+  [2] Thunderstorm v4.stl  src=-  faces=87080
+plate   : {'plater_id': '1', 'plater_name': '', 'filament_map_mode': 'Auto For Flush'}
+
+--- differs from base presets ---
+  max_travel_detour_distance: 0  ->  300
+  reduce_crossing_wall: 0  ->  1
+  resolution: 0.012  ->  0.004
+  (3 keys); gcode blobs differ from resolved base — expected: the base only has fdm_machine_common's placeholder (Studio hides BBL G-code), the project copy is the real one, keep it: change_filament_gcode, machine_end_gcode, machine_start_gcode, time_lapse_gcode
