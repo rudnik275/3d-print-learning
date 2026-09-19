@@ -6,6 +6,13 @@
 
 Fuzzy skin `external` 0.4 / 0.22 — каменная текстура, она же прячет слои; Arachne, 3 стенки, ширина 0.4 / 0.5; заполнение 8 % supportcubic с `infill_combination`; верх 0.6 мм monotonic; `bridge_flow` 0.95; поддержки `normal(manual)` — включены, но **ни одной грани не покрашено**, то есть поддержек нет. Выброшены его филаментные правки (`slow_down_layer_time` 10 с, min speed 10) — у нас пресет филамента свой. Профиль высот слоя у автора — только переход 0.2 → 0.24 на 6.7–7.7 мм, макушку он не утоньшал.
 
+## Заметки автора (страница модели, профиль Dobainier для P1P; A1-mini-версия «cut for A1 mini» — от MaxPowerPrints, он же починил дырку в глазу)
+
+- «I made support only on two areas under the big bridge because it's not a visible area» — у автора под потолком полости покрашены две зоны поддержек; в A1-mini-нарезке покраски нет, и комментаторы подтверждают: «the back inside was not pretty good, but will not be seen», «Rückseite innen Oberkante hat das Filament kaum halt». Совпадает с нашим прогнозом по мосту на 143 мм.
+- «You should use different layer height at the top of the head because it's very flat, and the layers are visible (0.24 where white, 0.08 where green)» — переменная высота слоя, 0.08 только на макушке. Это проверка 15 один в один; автор лечит её точечно, а не всей пластиной. Попробовали вложить профиль в `Metadata/layer_heights_profile.txt` (и в авторском формате с парами первого слоя) — **CLI-нарезка его игнорирует**, слоёв столько же, что и без него; авторский профиль 0.2 → 0.24 CLI тоже не применяла. Переменная высота — только руками в GUI Studio, поэтому верхушка целиком на 0.12.
+- «The fuzzy skin is less than normal to be more rapid» (0.4 / 0.22), «two internal walls of 0.5 mm» — под 400 г на цельную версию; наша cut-версия: 213 + 147 г.
+- Отзыв: с 0.6 соплом в тонких стенках остаются дыры; нам с 0.4 не грозит.
+
 ## Что добавили мы
 
 `resolution` 0.004, `slice_closing_radius` 0.01, `precise_outer_wall`, `reduce_crossing_wall` + `max_travel_detour_distance` 300, `seam_position = back` (шов на затылке, было aligned — вертикальная линия по лицу). Объекты сдвинуты в центр пластин (тело стояло от x = 0.3). Слой: **тело 0.20** (`moai-020c.3mf` → `moai-020.gcode.3mf`, plate 1: 7 ч 15, 213 г), **верхушка 0.12** (`moai-012c.3mf` → `moai-012.gcode.3mf`, plate 2: 7 ч 56, 147 г) — из-за макушки, см. прогноз. Оба файла содержат обе пластины; печатать из каждого свою.
