@@ -8,11 +8,12 @@
   bbs_calib.py temp <base.3mf> <out.3mf> <tower.stl> <t_hi> <t_lo>   temperature tower project (hot block at the bottom); the
                                                              wizard's full 350-mm tower is cut to the t_hi..t_lo blocks (mesh_cut.py)
   bbs_calib.py inject-temps <sliced.gcode.3mf> <t_hi>       M104 per 10 mm block after CLI slicing
-  bbs_calib.py speed <base.3mf> <out.3mf> <f_lo> <f_hi>     max volumetric speed: single-wall spiral cylinder
-  bbs_calib.py speed-ramp <sliced.gcode.3mf> <f_lo> <f_hi>  write the flow ramp into the sliced gcode; f_hi <= 26 for a
-                                                             0.42x0.2 line — Studio 2.8 silently refuses to load a gcode.3mf
-                                                             whose extrusion feedrate exceeds ~310 mm/s (4-30 => 357 mm/s
-                                                             opened as an empty plate, 4-26 fine, 2026-09-19)
+  bbs_calib.py speed <base.3mf> <out.3mf> <f_lo> <f_hi> [lw lh]      max volumetric speed: single-wall spiral cylinder
+  bbs_calib.py speed-ramp <sliced.gcode.3mf> <f_lo> <f_hi> [lw lh]   write the flow ramp into the sliced gcode; f_hi <= 26 if the
+                                                             file goes through Studio: 2.8 silently refuses a gcode.3mf whose
+                                                             volumetric flow exceeds ~26-28 mm3/s whatever the feedrate (4-30 and
+                                                             20-40 on a 0.6x0.28 line opened as an empty plate, 4-26 fine,
+                                                             2026-09-19); above that print from SD (bbl_printer.py upload)
 
 base_project supplies printer/filament/process settings (Metadata/project_settings.config).
 Per-object settings follow the wizard: print_flow_ratio = 1 + k/100, wall_loops 3, top 5, bottom 1,
@@ -182,16 +183,21 @@ def cylinder_mesh(d=40.0, h=60.0, n=144):
         ts.append((cb, j, i)); ts.append((ct, n+i, n+j))          # caps
     return vs, ts
 
-def speed_plate(base, out, f_lo, f_hi, d=40.0, h=60.0):
+def speed_plate(base, out, f_lo, f_hi, lw=0.42, lh=0.2, d=40.0, h=60.0):
     """max volumetric speed test: single-wall spiral cylinder; the flow ramp is written into the
-    sliced gcode afterwards by speed_ramp() (print the sliced file, do not re-slice in Studio)"""
+    sliced gcode afterwards by speed_ramp() (print the sliced file, do not re-slice in Studio).
+    lw/lh: a thicker line keeps the feedrate low for high flows (0.6 x 0.28: 40 mm3/s = 238 mm/s) — a 40 mm
+    circle cannot hold much above 300 mm/s; max_layer_height 0.28. Studio still refuses the file (flow > ~26-28
+    mm3/s), so such a plate is printed from SD"""
     vs, ts = cylinder_mesh(d, h)
     per_obj = lambda name: {"brim_type": "outer_only"}
-    lw, lh = 0.42, 0.2
-    build(base, out, [("mvs_%d_%d" % (f_lo, f_hi), vs, ts, (BED/2, BED/2))], per_obj,
-          {"spiral_mode": "1", "wall_loops": "1", "top_shell_layers": "0", "bottom_shell_layers": "2", "sparse_infill_density": "0%",
-           "outer_wall_speed": str(int(f_hi/(lw*lh))), "slow_down_layer_time": "0", "enable_overhang_speed": "0",
-           "only_one_wall_top": "0", "resolution": "0.05"}, "MVS test %d-%d" % (f_lo, f_hi))
+    sets = {"spiral_mode": "1", "wall_loops": "1", "top_shell_layers": "0", "bottom_shell_layers": "2", "sparse_infill_density": "0%",
+            "outer_wall_speed": str(int(f_hi/(lw*lh))), "slow_down_layer_time": "0", "enable_overhang_speed": "0",
+            "only_one_wall_top": "0", "resolution": "0.05"}
+    if (lw, lh) != (0.42, 0.2):
+        sets.update({"layer_height": str(lh), "initial_layer_print_height": str(lh), "line_width": str(lw), "outer_wall_line_width": str(lw),
+                     "inner_wall_line_width": str(lw), "initial_layer_line_width": str(lw)})
+    build(base, out, [("mvs_%d_%d" % (f_lo, f_hi), vs, ts, (BED/2, BED/2))], per_obj, sets, "MVS test %d-%d" % (f_lo, f_hi))
     files = _read_zip(out); cfg = json.loads(files["Metadata/project_settings.config"])
     cfg["filament_max_volumetric_speed"] = ["50"]; cfg["slow_down_for_layer_cooling"] = ["0"]; cfg["slow_down_layer_time"] = ["0"]
     diff = cfg.get("different_settings_to_system") or ["", "", ""]
@@ -233,6 +239,8 @@ if __name__ == "__main__":
     elif a[0] == "fix-sliced": fix_sliced(a[1], a[2] if len(a) > 2 else "N1")
     elif a[0] == "temp": temp_plate(a[1], a[2], a[3], int(a[4]), int(a[5]))
     elif a[0] == "inject-temps": inject_temps(a[1], int(a[2]))
-    elif a[0] == "speed": speed_plate(a[1], a[2], float(a[3]), float(a[4]))
-    elif a[0] == "speed-ramp": speed_ramp(a[1], float(a[2]), float(a[3]))
+    elif a[0] == "speed": speed_plate(a[1], a[2], float(a[3]), float(a[4]), *(float(x) for x in a[5:7]))
+    elif a[0] == "speed-ramp":
+        lw, lh = (float(a[4]), float(a[5])) if len(a) > 5 else (0.42, 0.2)
+        speed_ramp(a[1], float(a[2]), float(a[3]), z0=2*lh, lw=lw, lh=lh)
     else: print(__doc__)
