@@ -1,0 +1,16 @@
+project : prints/2026-09-19-thunderstorm-whistle/thunderstorm-corpo02-0.12hq.3mf
+machine : Bambu Lab A1 mini 0.4 nozzle
+process : 0.12mm High Quality @BBL A1M
+filament: SUNLU PLA @BBL A1M   (type PLA)
+bed     : Textured PEI Plate
+objects :
+  [2] Corpo_02  src=-  faces=87242
+plate   : {'plater_id': '1', 'plater_name': '', 'filament_map_mode': 'Auto For Flush'}
+
+--- differs from base presets ---
+  max_travel_detour_distance: 0  ->  300
+  reduce_crossing_wall: 0  ->  1
+  resolution: 0.012  ->  0.004
+  wall_loops: 2  ->  3
+  (4 keys); gcode blobs differ from resolved base — expected: the base only has fdm_machine_common's placeholder (Studio hides BBL G-code), the project copy is the real one, keep it: change_filament_gcode, machine_end_gcode, machine_start_gcode, time_lapse_gcode
+--- project-only keys (145): accel_to_decel_enable, accel_to_decel_factor, alternate_extra_wall, apply_scarf_seam_on_circles, bed_custom_model, bed_custom_texture, bed_temperature_formula, bridge_angle, brim_type, curr_bed_type, default_filament_colour, default_jerk, detect_narrow_internal_solid_infill, different_settings_to_system, embedding_wall_into_infill, enable_filament_dynamic_map, enable_mixed_color_sublayer, enable_order_independent_overlap_carving, enable_overhang_bridge_fan, enable_pressure_advance, enforce_support_layers, ensure_vertical_shell_thickness, exclude_object, extruder_ams_count, extruder_nozzle_stats, filament_change_length_nc, filament_colour, filament_colour_type, filament_is_mixed, filament_map, filament_map_mode, filament_mixed_components, filament_mixed_gradient, filament_mixed_gradient_curve, filament_mixed_gradient_per_part, filament_mixed_gradient_range, filament_mixed_sublayer_ratios, filament_multi_colour, filament_nozzle_map, filament_self_index ...

@@ -19,7 +19,10 @@ def parse(path):
             L = int(line.split(":")[1].split("/")[0]); z[L] = zpend; continue
         if line.startswith("; FEATURE: "):
             feat = line[11:].strip(); continue
-        if feat is None or not (line.startswith("G1 ") or line.startswith("G0 ")): continue
+        # arcs count too: enable_arc_fitting turns smooth walls into G2/G3, and `resolution` changes how much
+        # of a contour becomes arcs — skipping them undercounts walls and inflates the gap-fill share, by a
+        # different amount in each slice, so a variant comparison across a resolution change reads backwards.
+        if feat is None or line[:3] not in ("G1 ", "G0 ", "G2 ", "G3 "): continue
         mx = re.search(r"X([-\d.]+)", line); my = re.search(r"Y([-\d.]+)", line); me = re.search(r"E([-\d.]+)", line)
         nx = float(mx.group(1)) if mx else x; ny = float(my.group(1)) if my else y
         if me and float(me.group(1)) > 0 and (mx or my):
