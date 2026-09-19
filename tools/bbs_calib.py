@@ -9,7 +9,10 @@
                                                              wizard's full 350-mm tower is cut to the t_hi..t_lo blocks (mesh_cut.py)
   bbs_calib.py inject-temps <sliced.gcode.3mf> <t_hi>       M104 per 10 mm block after CLI slicing
   bbs_calib.py speed <base.3mf> <out.3mf> <f_lo> <f_hi>     max volumetric speed: single-wall spiral cylinder
-  bbs_calib.py speed-ramp <sliced.gcode.3mf> <f_lo> <f_hi>  write the flow ramp into the sliced gcode (print from SD)
+  bbs_calib.py speed-ramp <sliced.gcode.3mf> <f_lo> <f_hi>  write the flow ramp into the sliced gcode; f_hi <= 26 for a
+                                                             0.42x0.2 line — Studio 2.8 silently refuses to load a gcode.3mf
+                                                             whose extrusion feedrate exceeds ~310 mm/s (4-30 => 357 mm/s
+                                                             opened as an empty plate, 4-26 fine, 2026-09-19)
 
 base_project supplies printer/filament/process settings (Metadata/project_settings.config).
 Per-object settings follow the wizard: print_flow_ratio = 1 + k/100, wall_loops 3, top 5, bottom 1,
@@ -191,7 +194,9 @@ def speed_plate(base, out, f_lo, f_hi, d=40.0, h=60.0):
            "only_one_wall_top": "0", "resolution": "0.05"}, "MVS test %d-%d" % (f_lo, f_hi))
     files = _read_zip(out); cfg = json.loads(files["Metadata/project_settings.config"])
     cfg["filament_max_volumetric_speed"] = ["50"]; cfg["slow_down_for_layer_cooling"] = ["0"]; cfg["slow_down_layer_time"] = ["0"]
-    diff = cfg.get("different_settings_to_system") or ["", "", ""]; diff[1] = "filament_max_volumetric_speed;slow_down_for_layer_cooling;slow_down_layer_time"
+    diff = cfg.get("different_settings_to_system") or ["", "", ""]
+    keys = [k for k in diff[1].split(";") if k] + [k for k in ("filament_max_volumetric_speed", "slow_down_for_layer_cooling", "slow_down_layer_time") if k not in diff[1].split(";")]
+    diff[1] = ";".join(keys)                       # append: the base's own filament overrides (temperature, flow) must survive
     cfg["different_settings_to_system"] = diff
     files["Metadata/project_settings.config"] = json.dumps(cfg, indent=4, ensure_ascii=False).encode(); _write_zip(out, files)
     print("mvs plate: ramp %d -> %d mm3/s over z 0.4..%.1f (line %.2f x %.2f => %.0f..%.0f mm/s)" % (f_lo, f_hi, h, lw, lh, f_lo/(lw*lh), f_hi/(lw*lh)))
