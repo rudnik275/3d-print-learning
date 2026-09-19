@@ -5,7 +5,8 @@
   bbs_calib.py flow2 <base_project.3mf> <out.3mf> <coarse>   flow-rate fine: 10 blocks, -9..0 % on top of
                                                              the coarse flow ratio (e.g. 0.95)
   bbs_calib.py fix-sliced <sliced.gcode.3mf> [N1]           set printer_model_id in a CLI-sliced file
-  bbs_calib.py temp <base.3mf> <out.3mf> <tower.stl> <t_hi> <t_lo>   temperature tower project (hot block at the bottom)
+  bbs_calib.py temp <base.3mf> <out.3mf> <tower.stl> <t_hi> <t_lo>   temperature tower project (hot block at the bottom); the
+                                                             wizard's full 350-mm tower is cut to the t_hi..t_lo blocks (mesh_cut.py)
   bbs_calib.py inject-temps <sliced.gcode.3mf> <t_hi>       M104 per 10 mm block after CLI slicing
   bbs_calib.py speed <base.3mf> <out.3mf> <f_lo> <f_hi>     max volumetric speed: single-wall spiral cylinder
   bbs_calib.py speed-ramp <sliced.gcode.3mf> <f_lo> <f_hi>  write the flow ramp into the sliced gcode (print from SD)
@@ -120,9 +121,22 @@ def stl_mesh(path):
         ts.append(tuple(tri))
     return vs, ts
 
+TOWER_TOP = 350   # Studio's temperature_tower.stl: 35 blocks of 10 mm, labels 350 °C (bed) -> 180 °C (top)
+
+def tower_range(stl, t_hi, t_lo):
+    """cut the t_hi..t_lo blocks out of the full wizard tower (CalibUtils::calib_temp_tower); returns the STL to use"""
+    import subprocess, tempfile
+    vs, _ = stl_mesh(stl); z0 = min(v[2] for v in vs); h = max(v[2] for v in vs) - z0
+    if abs(h - (TOWER_TOP - 180) / 5 * 10 - 10) > 1: return stl          # not the full 35-block tower: use as is
+    if t_hi % 5 or t_lo % 5 or not 180 <= t_lo <= t_hi <= TOWER_TOP: raise SystemExit("tower temps must be multiples of 5 within 180..350")
+    z_lo = z0 + (TOWER_TOP - t_hi) / 5 * 10 + 0.01; z_hi = z0 + (TOWER_TOP - t_lo) / 5 * 10 + 10 + 0.01   # +eps: off the block faces, as the wizard does
+    dst = os.path.join(tempfile.gettempdir(), f"temp_tower_{t_hi}_{t_lo}.stl")
+    subprocess.run([os.path.join(os.path.dirname(os.path.abspath(__file__)), "mesh_cut.py"), stl, dst, str(z_lo), str(z_hi)], check=True)
+    return dst
+
 def temp_plate(base, out, stl, t_hi, t_lo):
     """temperature tower project: hottest block at the bottom, -5 °C per 10 mm (wizard convention)"""
-    vs, ts = stl_mesh(stl)
+    vs, ts = stl_mesh(tower_range(stl, t_hi, t_lo))
     per_obj = lambda name: {"brim_type": "outer_only"}
     cfg_sets = {}
     build(base, out, [("temp_tower_%d_%d" % (t_hi, t_lo), vs, ts, (BED/2, BED/2))], per_obj, cfg_sets, "Temperature tower %d-%d" % (t_hi, t_lo))
