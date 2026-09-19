@@ -1,0 +1,24 @@
+{
+    "filament_extruder_variant": [
+        "Direct Drive Standard"
+    ],
+    "filament_flow_ratio": [
+        "0.975"
+    ],
+    "filament_max_volumetric_speed": [
+        "24"
+    ],
+    "filament_settings_id": [
+        "SUNLU Matte @BBL A1M"
+    ],
+    "from": "User",
+    "inherits": "SUNLU PLA Matte @BBL A1M",
+    "name": "SUNLU Matte @BBL A1M",
+    "nozzle_temperature": [
+        "225"
+    ],
+    "nozzle_temperature_initial_layer": [
+        "225"
+    ],
+    "version": "2.8.0.6"
+}
