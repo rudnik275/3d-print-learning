@@ -15,6 +15,12 @@
   move <in.3mf> <out.3mf> --at x,y [--id N]  put an object's footprint centre at (x, y) on the bed — foreign
                                              projects sit in their printer's coordinates (H2S: x up to 350),
                                              on the 180 mm A1 mini that slices as "outside"; default: first item
+  ranges <in.3mf> <out.3mf> <obj> <min_z> <max_z> key=value ...
+                                             height-range modifier (Studio: "Height range modifier"): per-object settings for
+                                             z in [min_z, max_z] of the object, e.g. layer_height=0.08 on a flat crown — the
+                                             one way to vary layer height outside the GUI (layer_heights_profile.txt is
+                                             ignored by the CLI). <obj> is the object's 1-based ORDER in 3D/3dmodel.model
+                                             (as `show` prints it), not its id; ranges of one object accumulate
   gcode3mf <in.gcode.3mf> <out.gcode.3mf>    turn a CLI slice export into what Studio calls a sliced file:
                                              geometry stripped, plate points at the G-code — Studio then opens
                                              it in Preview with "Print plate" active instead of as a project
@@ -168,6 +174,19 @@ def move(inp, out, at, oid=None):
     files["3D/3dmodel.model"] = model.encode(); _write_zip(out, files)
     print(f"moved item {oid}: centre ({cx:.1f}, {cy:.1f}) -> ({at[0]:g}, {at[1]:g}), shift ({dx:+.1f}, {dy:+.1f}); written: {out}")
 
+def ranges(inp, out, obj, z_lo, z_hi, sets):
+    """Metadata/layer_config_ranges.xml (PrusaSlicer format, read by Studio and its CLI): <objects><object id=N>
+    <range min_z max_z><option opt_key=..>value. N = 1-based order of the object in 3D/3dmodel.model — verified
+    2026-09-19: id 2 on a two-object project hit the second object of the model file, not model_settings id 7."""
+    files = _read_zip(inp); path = "Metadata/layer_config_ranges.xml"
+    xml = files.get(path, b'<?xml version="1.0" encoding="utf-8"?>\n<objects>\n</objects>\n').decode()
+    opts = "".join(f'   <option opt_key="{k}">{v}</option>\n' for k, v in sets)
+    block = f'  <range min_z="{z_lo:g}" max_z="{z_hi:g}">\n{opts}  </range>\n'
+    m = re.search(r'( <object id="%d">\n)(.*?)( </object>\n)' % obj, xml, re.S)
+    xml = xml[:m.end(2)] + block + xml[m.end(2):] if m else xml.replace("</objects>", f' <object id="{obj}">\n{block} </object>\n</objects>')
+    files[path] = xml.encode(); _write_zip(out, files)
+    print(f"range on object {obj}: z {z_lo:g}..{z_hi:g} -> {dict(sets)}; written: {out}")
+
 def gcode3mf(inp, out):
     """Studio's own "export sliced file" carries no mesh: <resources/> <build/> and a model_settings.config with
     only the <plate> block. With a mesh present it loads the file as a project (Prepare, Print greyed)."""
@@ -198,6 +217,7 @@ if __name__ == "__main__":
     if a[0] == "assemble": assemble(a[1], a[2])
     elif a[0] == "show": show(a[1])
     elif a[0] == "gcode3mf": gcode3mf(a[1], a[2])
+    elif a[0] == "ranges": ranges(a[1], a[2], int(a[3]), float(a[4]), float(a[5]), [tuple(s.split("=", 1)) for s in a[6:]])
     elif a[0] == "move":
         at = tuple(float(v) for v in a[a.index("--at") + 1].split(","))
         move(a[1], a[2], at, a[a.index("--id") + 1] if "--id" in a else None)

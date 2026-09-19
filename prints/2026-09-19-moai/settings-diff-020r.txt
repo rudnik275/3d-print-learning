@@ -1,6 +1,6 @@
-project : prints/2026-09-19-moai/moai-012c.3mf
+project : prints/2026-09-19-moai/moai-020r.3mf
 machine : Bambu Lab A1 mini 0.4 nozzle
-process : 0.12mm Fine @BBL A1M
+process : 0.20mm Standard @BBL A1M
 filament: SUNLU Matte @BBL A1M   (type PLA)
 bed     : Textured PEI Plate
 objects :
@@ -32,8 +32,9 @@ plate   : {'plater_id': '1', 'plater_name': '', 'filament_map_mode': 'Auto For F
   support_interface_spacing: 0.5  ->  1
   support_style: default  ->  snug
   support_type: tree(auto)  ->  normal(manual)
+  top_shell_thickness: 1  ->  0.6
   top_surface_pattern: monotonicline  ->  monotonic
   wall_generator: classic  ->  arachne
   wall_loops: 2  ->  3
-  (26 keys); gcode blobs differ from resolved base — expected: the base only has fdm_machine_common's placeholder (Studio hides BBL G-code), the project copy is the real one, keep it: change_filament_gcode, machine_end_gcode, machine_start_gcode, time_lapse_gcode
+  (27 keys); gcode blobs differ from resolved base — expected: the base only has fdm_machine_common's placeholder (Studio hides BBL G-code), the project copy is the real one, keep it: change_filament_gcode, machine_end_gcode, machine_start_gcode, time_lapse_gcode
 --- project-only keys (126): accel_to_decel_enable, accel_to_decel_factor, apply_scarf_seam_on_circles, apply_top_surface_compensation, bed_custom_model, bed_custom_texture, bed_temperature_formula, bridge_angle, brim_type, curr_bed_type, default_filament_colour, default_jerk, detect_narrow_internal_solid_infill, different_settings_to_system, enable_overhang_bridge_fan, enable_pressure_advance, enforce_support_layers, ensure_vertical_shell_thickness, exclude_object, extruder_ams_count, filament_colour, filament_colour_type, filament_map, filament_map_mode, filament_multi_colour, filament_self_index, filter_out_gap_fill, first_layer_print_sequence, first_x_layer_fan_speed, flush_into_infill, flush_into_objects, flush_into_support, flush_multiplier, flush_volumes_matrix, flush_volumes_vector, gcode_add_line_number, has_scarf_joint_seam, host_type, independent_support_layer_height, infill_jerk ...
