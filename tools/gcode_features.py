@@ -8,7 +8,7 @@ import re, sys
 from collections import defaultdict
 
 def parse(path):
-    """-> {(layer, feature): [xmin, ymin, xmax, ymax, E, segments, tiny_segments]}, heights {layer: z}"""
+    """-> {(layer, feature): [xmin, ymin, xmax, ymax, E, segments, tiny_segments, longest_segment]}, heights {layer: z}"""
     L = 0; feat = None; x = y = 0.0; acc = {}; z = {}; zpend = 0.0
     for line in open(path, errors="replace"):
         if line.startswith("; Z_HEIGHT:"):                      # comes just before the layer-number line
@@ -26,10 +26,12 @@ def parse(path):
         mx = re.search(r"X([-\d.]+)", line); my = re.search(r"Y([-\d.]+)", line); me = re.search(r"E([-\d.]+)", line)
         nx = float(mx.group(1)) if mx else x; ny = float(my.group(1)) if my else y
         if me and float(me.group(1)) > 0 and (mx or my):
-            a = acc.setdefault((L, feat), [1e9, 1e9, -1e9, -1e9, 0.0, 0, 0])
+            a = acc.setdefault((L, feat), [1e9, 1e9, -1e9, -1e9, 0.0, 0, 0, 0.0])
             a[0] = min(a[0], nx); a[1] = min(a[1], ny); a[2] = max(a[2], nx); a[3] = max(a[3], ny)
             a[4] += float(me.group(1)); a[5] += 1
-            if ((nx - x) ** 2 + (ny - y) ** 2) ** 0.5 < 1.0: a[6] += 1      # segment shorter than 1 mm
+            d = ((nx - x) ** 2 + (ny - y) ** 2) ** 0.5
+            if d < 1.0: a[6] += 1                                          # segment shorter than 1 mm
+            if d > a[7]: a[7] = d                                          # longest single extrusion
         x, y = nx, ny
     return acc, z
 
@@ -49,8 +51,12 @@ def summary(acc, z):
         e = sum(a[4] for _, a in items); ls = [l for l, _ in items]
         line = f"{f:<18} E {e:7.1f} ({100 * e / total_e:4.1f} %)  layers {len(ls)}  z {z.get(ls[0], 0):.1f}..{z.get(ls[-1], 0):.1f}"
         if f == "Bridge":
-            l, a = max(items, key=lambda t: max(t[1][2] - t[1][0], t[1][3] - t[1][1]))
-            line += f"  max span {max(a[2] - a[0], a[3] - a[1]):.1f} mm @ L{l} z{z.get(l, 0):.1f}"
+            # the real span is the longest single extrusion through air, NOT the bounding box of the
+            # bridge region: a 9 x 37 mm patch is bridged across its short side, and reading the box as
+            # the span turned a 21.8 mm bridge into a fake "37 mm" (Aztec whistle 20.09).
+            l, a = max(items, key=lambda t: t[1][7])
+            box = max(a[2] - a[0], a[3] - a[1])
+            line += f"  max span {a[7]:.1f} mm @ L{l} z{z.get(l, 0):.1f} (область {box:.1f} мм)"
         if f == "Gap infill":
             tiny = sum(a[6] for _, a in items); seg = sum(a[5] for _, a in items)
             worst = sorted(items, key=lambda t: -t[1][6])[:3]

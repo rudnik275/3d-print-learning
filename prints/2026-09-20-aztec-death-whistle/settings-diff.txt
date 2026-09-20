@@ -1,0 +1,24 @@
+project : work/aztec-pkg-brim.3mf
+machine : Bambu Lab A1 mini 0.4 nozzle
+process : 0.16mm Optimal @BBL A1M
+filament: SUNLU Matte @BBL A1M   (type PLA)
+bed     : Textured PEI Plate
+objects :
+  [2] Ed 5.stl  src=-  faces=708264
+plate   : {'plater_id': '1', 'plater_name': '5th Edition', 'filament_map_mode': 'Auto For Flush'}
+
+--- differs from base presets ---
+  bottom_surface_pattern: monotonic  ->  monotonicline
+  enable_support: 0  ->  1
+  max_travel_detour_distance: 0  ->  300
+  reduce_crossing_wall: 0  ->  1
+  resolution: 0.012  ->  0.004
+  skeleton_infill_density: 15  ->  8
+  skin_infill_density: 15  ->  8
+  sparse_infill_density: 15  ->  8
+  sparse_infill_pattern: grid  ->  gyroid
+  support_style: default  ->  tree_slim
+  support_type: tree(auto)  ->  tree(manual)
+  wall_generator: classic  ->  arachne
+  (12 keys); gcode blobs differ from resolved base — expected: the base only has fdm_machine_common's placeholder (Studio hides BBL G-code), the project copy is the real one, keep it: change_filament_gcode, machine_end_gcode, machine_start_gcode, time_lapse_gcode
+--- project-only keys (132): accel_to_decel_enable, accel_to_decel_factor, apply_scarf_seam_on_circles, apply_top_surface_compensation, bed_custom_model, bed_custom_texture, bed_temperature_formula, bridge_angle, brim_type, curr_bed_type, default_filament_colour, default_jerk, detect_narrow_internal_solid_infill, different_settings_to_system, embedding_wall_into_infill, enable_overhang_bridge_fan, enable_pressure_advance, enforce_support_layers, ensure_vertical_shell_thickness, exclude_object, extruder_ams_count, extruder_nozzle_stats, filament_change_length_nc, filament_colour, filament_colour_type, filament_map, filament_map_mode, filament_multi_colour, filament_nozzle_map, filament_self_index, filament_volume_map, filter_out_gap_fill, first_layer_print_sequence, first_x_layer_fan_speed, flush_into_infill, flush_into_objects, flush_into_support, flush_multiplier, flush_volumes_matrix, flush_volumes_vector ...
