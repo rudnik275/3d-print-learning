@@ -3,3 +3,5 @@
 *.gcode.3mf
 .claude/worktrees/
 .printer.json
+__pycache__/
+result.json
