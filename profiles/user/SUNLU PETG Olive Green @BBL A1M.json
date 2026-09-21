@@ -2,11 +2,20 @@
     "filament_extruder_variant": [
         "Direct Drive Standard"
     ],
+    "filament_flow_ratio": [
+        "0.95"
+    ],
     "filament_settings_id": [
         "SUNLU PETG Olive Green @BBL A1M"
     ],
     "from": "User",
     "inherits": "Generic PETG @BBL A1M",
     "name": "SUNLU PETG Olive Green @BBL A1M",
+    "nozzle_temperature": [
+        "245"
+    ],
+    "nozzle_temperature_initial_layer": [
+        "245"
+    ],
     "version": "2.8.0.6"
 }
