@@ -22,9 +22,18 @@ from bbs_calib import build, stl_mesh
 MESH, BASE, OUT = sys.argv[1], sys.argv[2], sys.argv[3]
 os.makedirs(OUT, exist_ok=True)
 
-def body(i):
-    f = [n for n in os.listdir(MESH) if n.startswith(f"body-{i}-")][0]
-    vs, ts = stl_mesh(os.path.join(MESH, f)); return np.array(vs, float), ts
+import json
+BODIES = json.load(open(os.path.join(MESH, "bodies.json")))        # step2stl.py writes name/file per body
+
+def have(name):
+    return any(b["name"] == name for b in BODIES)
+
+def body(name, nth=0):
+    """by Fusion body name (positions shift when a body is removed from the export — the second STEP lost one);
+    nth picks among same-named bodies (the four 'Pin body')"""
+    hits = [b for b in BODIES if b["name"] == name]
+    if len(hits) <= nth: raise SystemExit(f"body '{name}' #{nth} not in {MESH}: {[b['name'] for b in BODIES]}")
+    vs, ts = stl_mesh(hits[nth]["file"]); return np.array(vs, float), ts
 
 # proper rotations (det +1) Fusion (X,Y,Z) -> bed (x,y,z); a reflection would need the triangle winding flipped
 BACK_DOWN = lambda v: np.c_[v[:, 0], -v[:, 1], -v[:, 2]]          # back wall (Z=120) on the bed, TV top toward bed front
@@ -36,13 +45,13 @@ def rot_z(v, deg):
     a = math.radians(deg); c, s = math.cos(a), math.sin(a)
     return np.c_[c * v[:, 0] - s * v[:, 1], s * v[:, 0] + c * v[:, 1], v[:, 2]]
 
-def leg(i):
+def leg(name):
     """foot-down, then turned so the lean (foot -> socket end) points to +y: the overhang belly then faces the
     bed's back, where seam_position=back also puts the seam — both end up under the TV, facing inward."""
-    v, t = body(i); v = FOOT_DOWN(v); z0, z1 = v[:, 2].min(), v[:, 2].max()
+    v, t = body(name); v = FOOT_DOWN(v); z0, z1 = v[:, 2].min(), v[:, 2].max()
     foot = v[v[:, 2] < z0 + 0.05][:, :2].mean(0); top = v[v[:, 2] > z1 - 0.05][:, :2].mean(0)
     lean = top - foot; ang = 90 - math.degrees(math.atan2(lean[1], lean[0]))
-    v = rot_z(v, ang); print(f"  leg body {i}: lean {np.linalg.norm(lean):.1f} mm, turned {ang:+.0f}°")
+    v = rot_z(v, ang); print(f"  {name}: lean {np.linalg.norm(lean):.1f} mm, turned {ang:+.0f}°")
     return v, t
 
 def louver_thickness(v, t):
@@ -78,39 +87,50 @@ def plate(name, base, objects, per_obj, sets, title):
         ex = v.max(0) - v.min(0); print(f"  {n}: {ex[0]:.1f} x {ex[1]:.1f} x {ex[2]:.1f} mm at ({cx}, {cy}) -> x {cx-ex[0]/2:.1f}..{cx+ex[0]/2:.1f}, y {cy-ex[1]/2:.1f}..{cy+ex[1]/2:.1f}")
 
 # 1. bezel — 0.12 Fine: the 45° bevel is the most visible surface of the whole TV
-v, t = body(8); v = FRONT_DOWN_90(v)
-plate("bezel", "base-012mm.3mf", [("bezel", v, t, (100.0, 90.0))], lambda n: {},
+if not have("face right"): print("  bezel: body 'face right' missing from this export — skipped")
+else:
+  v, t = body("face right"); v = FRONT_DOWN_90(v)
+  plate("bezel", "base-012mm.3mf", [("bezel", v, t, (100.0, 90.0))], lambda n: {},
       {**PKG, **SUPPORT, "support_threshold_angle": "50",       # hooks (90°) yes, the 45° bevel no
        "support_on_build_plate_only": "0", "wall_loops": "3", "brim_type": "no_brim", "elefant_foot_compensation": "0.15"},
       "Kindle TV - bezel")
 
 # 2-4. shells — 0.16 High Quality: big flat vertical walls, outer wall 60 mm/s against ripple
-for name, i, title in (("box2", 12, "Kindle TV - middle box"), ("cap-right", 10, "Kindle TV - right cheek"), ("cap-left", 11, "Kindle TV - left cheek")):
-    v, t = body(i); v = BACK_DOWN(v)
+for name, bname, title in (("box2", "box (2)", "Kindle TV - middle box"), ("cap-right", "box", "Kindle TV - right cheek"), ("cap-left", "box (1)", "Kindle TV - left cheek")):
+    if not any(b["name"] == bname for b in BODIES): print(f"  {name}: body '{bname}' missing from this export — skipped"); continue
+    v, t = body(bname); v = BACK_DOWN(v)
     plate(name, "base-016mm.3mf", [(name, v, t, (100.0, 90.0))], lambda n: {}, SHELL, title)
 
 # 5. vent — 0.12 Fine (dome top and rounded end are shallow slopes), on its straight edge, brim; slats sized to whole lines
-v, t = body(9); v = EDGE_DOWN(v)
-th, n = louver_thickness(v, t); loops = 2; lw = min(0.5, max(0.4, th / (2 * loops)))
-print(f"  vent: {n} slats, thickness {th:.2f} mm -> {loops} loops x {lw:.2f} mm per side")
-VENT = {**PKG, "wall_loops": "3", "outer_wall_line_width": f"{lw:.2f}", "inner_wall_line_width": f"{lw:.2f}",
-        "brim_type": "outer_only", "brim_width": "4", "seam_position": "back"}
-plate("vent-nosup", "base-012mm.3mf", [("vent", v, t, (97.5, 90.0))], lambda n: {}, VENT, "Kindle TV - speaker grille")   # slicer warns: floating regions (dome bottom)
-plate("vent-sup", "base-012mm.3mf", [("vent", v, t, (97.5, 90.0))], lambda n: {},
-      {**VENT, **SUPPORT, "support_on_build_plate_only": "1"}, "Kindle TV - speaker grille (dome supported)")
-# trees also grew between the louvres up to the top rail (z 43): Studio treats the rail over the slat tops as an
-# overhang, not a bridge (bridge_no_support=1 changed nothing). A support blocker above the dome's equator keeps
-# the dome trees (in front, open air) and drops the rest; then 0.08 layers on the rounded end's top band (check 15).
-from bbs_blocker import blocker
-from bbs_project import ranges
-blocker(os.path.join(OUT, "vent-sup.3mf"), os.path.join(OUT, "vent-blk.3mf"), 1, (15, 70, 24, 180, 110, 50))
-ranges(os.path.join(OUT, "vent-blk.3mf"), os.path.join(OUT, "vent.3mf"), 1, 42, 48, [("layer_height", "0.08")])
+if not have("vent"):
+    print("  vent: body 'vent' missing from this export — skipped")
+else:
+  v, t = body("vent"); v = EDGE_DOWN(v)
+  th, n = louver_thickness(v, t); loops = 2; lw = min(0.5, max(0.4, th / (2 * loops)))
+  print(f"  vent: {n} slats, thickness {th:.2f} mm -> {loops} loops x {lw:.2f} mm per side")
+  VENT = {**PKG, "wall_loops": "3", "outer_wall_line_width": f"{lw:.2f}", "inner_wall_line_width": f"{lw:.2f}",
+          "brim_type": "outer_only", "brim_width": "4", "seam_position": "back"}
+  plate("vent-nosup", "base-012mm.3mf", [("vent", v, t, (97.5, 90.0))], lambda n: {}, VENT, "Kindle TV - speaker grille")   # slicer warns: floating regions (dome bottom)
+  plate("vent-sup", "base-012mm.3mf", [("vent", v, t, (97.5, 90.0))], lambda n: {},
+        {**VENT, **SUPPORT, "support_on_build_plate_only": "1"}, "Kindle TV - speaker grille (dome supported)")
+  # trees also grew between the louvres up to the top rail (z 43): Studio treats the rail over the slat tops as an
+  # overhang, not a bridge (bridge_no_support=1 changed nothing). A support blocker above the dome's equator keeps
+  # the dome trees (in front, open air) and drops the rest; then 0.08 layers on the rounded end's top band (check 15).
+  # The blocker covers ONLY the slat band in y (bed y ≤ 95): the first version spanned the full depth and silently
+  # removed the trees Studio had planned under the two snap clips at bed y 95–105, z 41.6 — a 2.4 × 9.1 mm cantilever
+  # started in mid-air and the print was cancelled at layer 24. Verify any blocker with scripts/gcode_unsupported.py.
+  from bbs_blocker import blocker
+  from bbs_project import ranges
+  blocker(os.path.join(OUT, "vent-sup.3mf"), os.path.join(OUT, "vent-blk.3mf"), 1, (15, 70, 24, 180, 95, 50))
+  ranges(os.path.join(OUT, "vent-blk.3mf"), os.path.join(OUT, "vent.3mf"), 1, 42, 48, [("layer_height", "0.08")])
 
 # 6. legs + pins — 0.20 Standard; pins solid
+if not (have("leg1") and have("Pin body")):
+    print("  legs: leg/pin bodies missing from this export — skipped"); sys.exit(0)
 objs = []
-for k, i in enumerate((4, 5, 6, 7)):
-    v, t = leg(i); objs.append((f"leg{k+1}", v, t, (60.0 + 30.0 * k, 100.0)))
+for k, bname in enumerate(("leg1", "leg2", "leg3", "leg4")):
+    v, t = leg(bname); objs.append((f"leg{k+1}", v, t, (60.0 + 30.0 * k, 100.0)))
 for k in range(6):
-    v, t = body(k % 4); objs.append((f"pin{k+1}", EDGE_DOWN(v), t, (55.0 + 20.0 * k, 60.0)))
+    v, t = body("Pin body", k % 4); objs.append((f"pin{k+1}", EDGE_DOWN(v), t, (55.0 + 20.0 * k, 60.0)))
 plate("legs", "base-020mm.3mf", objs, lambda n: {"sparse_infill_density": "100%"} if n.startswith("pin") else {},
       {**PKG, "wall_loops": "3", "brim_type": "no_brim", "seam_position": "back"}, "Kindle TV - legs and pins")
