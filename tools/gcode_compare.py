@@ -35,9 +35,9 @@ def secs(t):
 def features(path):
     acc, z = parse(path)
     E, tiny, seg, span = {}, {}, {}, {}
-    for (L, f), (x0, y0, x1, y1, e, n, t) in acc.items():
+    for (L, f), (x0, y0, x1, y1, e, n, t, longest) in acc.items():   # 8 fields since 20.09: longest single extrusion
         E[f] = E.get(f, 0.0) + e; seg[f] = seg.get(f, 0) + n; tiny[f] = tiny.get(f, 0) + t
-        if f == "Bridge": span[f] = max(span.get(f, 0.0), max(x1 - x0, y1 - y0))
+        if f == "Bridge": span[f] = max(span.get(f, 0.0), longest)       # the real span, not the region's box
     return E, tiny, seg, span
 
 def times(path):
