@@ -1,0 +1,10 @@
+{
+  "extraKnownMarketplaces": {
+    "bambu-print-model": {
+      "source": { "source": "github", "repo": "rudnik275/bambu-print-model" }
+    }
+  },
+  "enabledPlugins": {
+    "bambu-print-model@bambu-print-model": true
+  }
+}
