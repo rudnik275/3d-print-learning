@@ -9,11 +9,11 @@
         "16"
     ],
     "filament_settings_id": [
-        "SUNLU PETG Olive Green @BBL A1M"
+        "SUNLU PETG @BBL A1M"
     ],
     "from": "User",
     "inherits": "Generic PETG @BBL A1M",
-    "name": "SUNLU PETG Olive Green @BBL A1M",
+    "name": "SUNLU PETG @BBL A1M",
     "nozzle_temperature": [
         "245"
     ],
