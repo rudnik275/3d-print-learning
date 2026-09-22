@@ -5,6 +5,9 @@
     "filament_flow_ratio": [
         "0.95"
     ],
+    "filament_max_volumetric_speed": [
+        "16"
+    ],
     "filament_settings_id": [
         "SUNLU PETG Olive Green @BBL A1M"
     ],
