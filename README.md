@@ -13,10 +13,6 @@
 | `profiles/` | пользовательские пресеты Studio (`user/`) и снимки базовых (`baseline/`) |
 | `tools/` | чтение состояния Bambu Studio и Fusion |
 
-## Руководство по Bambu Studio
-
-`docs/guide/bambu-studio-guide.pdf` — где какая опция в Studio 02.08, что она делает, как опции влияют друг на друга, калибровка, симптом → что крутить; со скриншотами. Исходник `docs/guide/guide.html`, пересборка: `uv run --with playwright --with pypdf python docs/guide/build.py`.
-
 ## Уроки
 
 1. `lessons/01-walls-calibration.md` — горбы на стенках коробки: состав стола, переходы геометрии, шов. Коробка закрыта 17.09 на пакете скилла (`prints/2026-09-17-box-skill-test/`): остаток — кромки окна, лечит фаска в дизайне; тест 1 (scarf seam) ждёт.
