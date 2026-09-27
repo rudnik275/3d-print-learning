@@ -27,7 +27,7 @@ SUNLU PLA Bone White, PLA Beige, PLA Matte Grey, PLA Matte Oak, PETG Olive Green
 
 | Пресет | База | Температура | Flow ratio | MVS | Дата |
 | --- | --- | --- | --- | --- | --- |
-| `SUNLU PLA @BBL A1M` (Bone White, Beige) | SUNLU PLA+ @BBL A1M | 220 °C | 0.98 | 12 мм³/с (предел 13) | 2026-09-16 |
+| `SUNLU PLA @BBL A1M` (Bone White, Beige) | SUNLU PLA+ @BBL A1M | 220 °C | 0.98 | 13 мм³/с (предел 15.3) | 2026-09-27 |
 | `SUNLU Matte @BBL A1M` (Matte Grey, Oak) | SUNLU PLA Matte @BBL A1M | 225 °C | 0.975 | 24 мм³/с (чисто до 26, предел выше) | 2026-09-19 |
 
 ## Термины (как в Bambu Studio)
