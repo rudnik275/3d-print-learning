@@ -1,4 +1,10 @@
 {
+    "fan_max_speed": [
+        "30"
+    ],
+    "fan_min_speed": [
+        "30"
+    ],
     "filament_extruder_variant": [
         "Direct Drive Standard"
     ],
@@ -19,6 +25,9 @@
     ],
     "nozzle_temperature_initial_layer": [
         "245"
+    ],
+    "overhang_fan_speed": [
+        "70"
     ],
     "version": "2.8.0.6"
 }
