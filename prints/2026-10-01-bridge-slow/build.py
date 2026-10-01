@@ -3,10 +3,10 @@
 
 Follow-up to ../2026-10-01-bridge-flow (50 mm/s: flow 0.8 looked best of 0.8 / 0.9 / 1.0, still not perfect).
 The idea under test comes from MakerWorld 2050964 (bridge 10 mm/s, bridge_flow 1.1-1.9). Same rows as the first
-plate (bridge_row.scad: 10-mm deck at z = 6 over spans 15 / 25 / 35 / 45 mm, free edges), six of them, one
+plate (bridge_row.scad: 10-mm deck at z = 6 over spans 15 / 25 / 35 / 45 mm, free edges), five of them, one
 variable between neighbours:
-  50/0.8 — control, the best row of the first plate;
-  10/0.8 — speed alone changed;
+  10/0.8 — speed alone changed against the first plate's 0.8 row (that part is the control: same day, spool
+           and bridge settings, so it is not reprinted);
   10/1.0, 10/1.2, 10/1.4, 10/1.6 — flow at the slow speed.
 "Slow" is the author's set: bridge_speed 10, overhang_2_4_speed 10, overhang_3_4_speed 10 (the deck edges are
 overhang walls). Everything else as before — 0.20mm Standard, calibrated SUNLU PLA, bridge fan 100 %, no supports.
@@ -27,9 +27,9 @@ ROW_SCAD = os.path.join(REPO, "prints", "2026-10-01-bridge-flow", "bridge_row.sc
 SLICE = os.path.expanduser("~/dev/bambu-print-model/skills/print-model/scripts/slice.py")
 BASE = os.path.join(REPO, "prints", "2026-09-17-snap-fit", "Snap-fit-test.3mf")   # A1 mini, 0.20 Standard, SUNLU PLA, textured PEI
 NAME = "pla-bridge-slow"
-ROWS = [(50, 0.8), (10, 0.8), (10, 1.0), (10, 1.2), (10, 1.4), (10, 1.6)]   # (bridge speed mm/s, bridge_flow), back to front
+ROWS = [(10, 0.8), (10, 1.0), (10, 1.2), (10, 1.4), (10, 1.6)]   # (bridge speed mm/s, bridge_flow), back to front
 TAB, LENGTH, UNDER = 14, 150, 6.0                     # rows 150 mm long: x 22..172, the left edge stays right of x = 20
-CX, ROW_Y = 97.0, [155.0 - 26.0 * i for i in range(6)]
+CX, ROW_Y = 97.0, [142.0 - 26.0 * i for i in range(len(ROWS))]
 
 GLOBAL = {"enable_support": "0"}
 FILAMENT = {"filament_max_volumetric_speed": "13"}   # SUNLU PLA recalibrated 27.09 (base project still has 12)
@@ -81,7 +81,7 @@ def verify(sliced):
                 a = acc.setdefault((r, feat), [0.0, 0.0, 0.0]); a[0] += float(e.group(1)); a[1] += L; a[2] += L / (f / 60) if f else 0
         x, y = nx, ny
     print("layers:", layers, "| M1002:", "\n".join(g).count("M1002"))
-    ref = acc.get((2, "Bridge"))                      # row 10/1.0 is the flow reference
+    ref = acc.get((ROWS.index((10, 1.0)), "Bridge"))  # row 10/1.0 is the flow reference
     for r, (speed, flow) in enumerate(ROWS):
         b, o = acc.get((r, "Bridge")), acc.get((r, "Overhang wall"))
         if not b: print(f"  {speed}/{flow:.1f}: no Bridge on z {UNDER + 0.2:.1f}"); continue
