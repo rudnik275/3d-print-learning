@@ -1,0 +1,14 @@
+{
+    "from": "User",
+    "version": "02.01.00.19",
+    "inherits": "0.20mm Standard @BBL A1M",
+    "name": "Gridfinity PETG 0.20 A1 mini",
+    "print_settings_id": "Gridfinity PETG 0.20 A1 mini",
+    "sparse_infill_pattern": "gyroid",
+    "bottom_shell_layers": "5",
+    "wall_loops": "3",
+    "thick_bridges": "1",
+    "thick_internal_bridges": "1",
+    "internal_bridge_speed": "50",
+    "internal_bridge_flow": "1"
+}

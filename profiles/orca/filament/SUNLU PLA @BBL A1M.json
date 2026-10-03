@@ -1,0 +1,18 @@
+{
+    "from": "User",
+    "version": "02.01.00.19",
+    "inherits": "SUNLU PLA+ @BBL A1M",
+    "name": "SUNLU PLA @BBL A1M",
+    "filament_settings_id": [
+        "SUNLU PLA @BBL A1M"
+    ],
+    "close_additional_fan_first_x_layers": [
+        "1"
+    ],
+    "filament_flow_ratio": [
+        "1.00"
+    ],
+    "filament_max_volumetric_speed": [
+        "13"
+    ]
+}
