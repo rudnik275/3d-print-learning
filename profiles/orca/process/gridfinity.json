@@ -31,5 +31,8 @@
     "internal_bridge_speed": "50",
     "internal_bridge_flow": "0.625",
     "set_other_flow_ratios": "1",
-    "overhang_flow_ratio": "0.625"
+    "overhang_flow_ratio": "0.625",
+    "seam_slope_type": "external",
+    "seam_slope_conditional": "1",
+    "wipe_on_loops": "1"
 }
