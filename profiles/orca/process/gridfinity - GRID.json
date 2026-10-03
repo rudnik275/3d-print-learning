@@ -1,0 +1,19 @@
+{
+    "from": "User",
+    "version": "02.01.00.19",
+    "inherits": "0.20mm Standard @BBL A1M",
+    "name": "gridfinity - GRID",
+    "print_settings_id": "gridfinity - GRID",
+    "sparse_infill_pattern": "grid",
+    "enable_prime_tower": "0",
+    "max_travel_detour_distance": "300",
+    "precise_outer_wall": "1",
+    "reduce_crossing_wall": "1",
+    "resolution": "0.004",
+    "slice_closing_radius": "0.01",
+    "top_surface_pattern": "concentric",
+    "thick_bridges": "1",
+    "thick_internal_bridges": "1",
+    "internal_bridge_speed": "50",
+    "internal_bridge_flow": "1"
+}

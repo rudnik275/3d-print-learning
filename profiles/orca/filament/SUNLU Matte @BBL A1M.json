@@ -1,0 +1,24 @@
+{
+    "from": "User",
+    "version": "02.01.00.19",
+    "inherits": "SUNLU PLA Matte @BBL A1M",
+    "name": "SUNLU Matte @BBL A1M",
+    "filament_settings_id": [
+        "SUNLU Matte @BBL A1M"
+    ],
+    "close_additional_fan_first_x_layers": [
+        "1"
+    ],
+    "filament_flow_ratio": [
+        "0.975"
+    ],
+    "filament_max_volumetric_speed": [
+        "24"
+    ],
+    "nozzle_temperature": [
+        "225"
+    ],
+    "nozzle_temperature_initial_layer": [
+        "225"
+    ]
+}

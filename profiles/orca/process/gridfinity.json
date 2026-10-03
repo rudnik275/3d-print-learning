@@ -1,0 +1,35 @@
+{
+    "from": "User",
+    "version": "02.01.00.19",
+    "inherits": "0.20mm Standard @BBL A1M",
+    "name": "gridfinity",
+    "print_settings_id": "gridfinity",
+    "sparse_infill_pattern": "gyroid",
+    "bridge_flow": "1.6",
+    "bridge_speed": [
+        "10"
+    ],
+    "enable_prime_tower": "0",
+    "ironing_flow": "20%",
+    "ironing_speed": "25",
+    "max_travel_detour_distance": "300",
+    "overhang_2_4_speed": [
+        "10"
+    ],
+    "overhang_3_4_speed": [
+        "10"
+    ],
+    "precise_outer_wall": "1",
+    "reduce_crossing_wall": "1",
+    "skeleton_infill_density": "10%",
+    "skin_infill_density": "10%",
+    "slice_closing_radius": "0.01",
+    "sparse_infill_density": "10%",
+    "wall_loops": "3",
+    "thick_bridges": "1",
+    "thick_internal_bridges": "1",
+    "internal_bridge_speed": "50",
+    "internal_bridge_flow": "0.625",
+    "set_other_flow_ratios": "1",
+    "overhang_flow_ratio": "0.625"
+}

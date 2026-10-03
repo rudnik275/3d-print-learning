@@ -1,0 +1,24 @@
+{
+    "from": "User",
+    "version": "02.01.00.19",
+    "inherits": "0.20mm Standard @BBL A1M",
+    "name": "SUNLU PLA 0.20 A1 mini",
+    "print_settings_id": "SUNLU PLA 0.20 A1 mini",
+    "sparse_infill_pattern": "grid",
+    "bridge_flow": "1.6",
+    "bridge_speed": [
+        "10"
+    ],
+    "overhang_2_4_speed": [
+        "10"
+    ],
+    "overhang_3_4_speed": [
+        "10"
+    ],
+    "thick_bridges": "1",
+    "thick_internal_bridges": "1",
+    "internal_bridge_speed": "50",
+    "internal_bridge_flow": "0.625",
+    "set_other_flow_ratios": "1",
+    "overhang_flow_ratio": "0.625"
+}

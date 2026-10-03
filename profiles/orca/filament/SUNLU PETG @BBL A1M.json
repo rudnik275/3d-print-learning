@@ -1,0 +1,30 @@
+{
+    "from": "User",
+    "version": "02.01.00.19",
+    "inherits": "Generic PETG @BBL A1M",
+    "name": "SUNLU PETG @BBL A1M",
+    "filament_settings_id": [
+        "SUNLU PETG @BBL A1M"
+    ],
+    "fan_max_speed": [
+        "30"
+    ],
+    "fan_min_speed": [
+        "30"
+    ],
+    "filament_flow_ratio": [
+        "0.95"
+    ],
+    "filament_max_volumetric_speed": [
+        "16"
+    ],
+    "nozzle_temperature": [
+        "245"
+    ],
+    "nozzle_temperature_initial_layer": [
+        "245"
+    ],
+    "overhang_fan_speed": [
+        "70"
+    ]
+}
