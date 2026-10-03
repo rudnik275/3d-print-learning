@@ -37,6 +37,12 @@ META = {"name", "inherits", "from", "setting_id", "base_id", "filament_id", "ver
         "compatible_printers_condition", "compatible_prints", "compatible_prints_condition", "upward_compatible_machine",
         "filament_extruder_variant", "print_extruder_id", "print_extruder_variant", "is_custom_defined"}
 REJECTED = {("tree_support_wall_count", "-1")}
+# What Studio 2.8 could not do and Orca can, added to every process preset:
+# - scarf seam: Studio wrote seam_slope_* into the header but left the G-code body unchanged (ring, Benchy, CLI and
+#   GUI); "external" + conditional puts a scarf only on smooth outer contours, a contour with a sharp corner keeps a
+#   plain seam in that corner; length 20 mm, 10 steps, threshold 155 deg — Orca's defaults;
+# - wipe_on_loops: a short inward move at the end of a closed loop against the seam blob; Studio has no such key.
+ORCA_EXTRAS = {"seam_slope_type": "external", "seam_slope_conditional": "1", "wipe_on_loops": "1"}
 
 
 def find(roots, kind, name):
@@ -83,6 +89,7 @@ def convert(kind, user, version):
     keys = {**parity, **own}
     if kind == "process":
         keys.update(bridges(keys))
+        keys.update(ORCA_EXTRAS)
     keys = {k: v for k, v in keys.items() if (k, str(one(v))) not in REJECTED}
     out = {"from": "User", "version": version, "inherits": parent, "name": user["name"]}
     out.update({"process": {"print_settings_id": user["name"]}, "filament": {"filament_settings_id": [user["name"]]},
