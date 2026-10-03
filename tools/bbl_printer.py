@@ -8,8 +8,9 @@
   bbl_printer.py camera <out.jpg>
 
 Printer address/serial: tools/../.printer.json ({"ip":..., "serial":...}) or env BBL_IP / BBL_SERIAL.
-Access code: env BBL_ACCESS_CODE, else read in-process from Bambu Studio's own config
-(BambuStudio.conf → access_code[serial]). It is never printed."""
+Access code: env BBL_ACCESS_CODE, else read in-process from the slicer's own config — OrcaSlicer.conf
+(user_access_code / access_code [serial]: Orca keeps what was typed into its Device tab), then BambuStudio.conf
+(access_code[serial]). It is never printed."""
 import json, os, sys, time, warnings
 warnings.filterwarnings("ignore")
 import bambulabs_api as bl
@@ -21,10 +22,14 @@ def cfg():
     if os.path.exists(p): c = json.load(open(p))
     ip = os.environ.get("BBL_IP") or c.get("ip"); serial = os.environ.get("BBL_SERIAL") or c.get("serial")
     code = os.environ.get("BBL_ACCESS_CODE")
-    if not code:
-        conf = json.load(open(os.path.expanduser("~/Library/Application Support/BambuStudio/BambuStudio.conf")))
-        ac = conf.get("access_code", {})
-        code = ac.get(serial) if isinstance(ac, dict) else ac
+    for conf_path, sections in (("~/Library/Application Support/OrcaSlicer/OrcaSlicer.conf", ("user_access_code", "access_code")),
+                                ("~/Library/Application Support/BambuStudio/BambuStudio.conf", ("access_code",))):
+        p = os.path.expanduser(conf_path)
+        if code or not os.path.exists(p): continue
+        conf = json.load(open(p))
+        for s in sections:
+            ac = conf.get(s, {})
+            code = code or (ac.get(serial) if isinstance(ac, dict) else ac)
     if not (ip and serial and code): raise SystemExit("need ip, serial and access code (see docstring)")
     return ip, serial, code
 
