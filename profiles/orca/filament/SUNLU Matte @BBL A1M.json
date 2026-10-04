@@ -20,5 +20,8 @@
     ],
     "nozzle_temperature_initial_layer": [
         "225"
+    ],
+    "dont_slow_down_outer_wall": [
+        "1"
     ]
 }

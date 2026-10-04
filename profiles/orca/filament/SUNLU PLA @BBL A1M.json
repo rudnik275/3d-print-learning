@@ -14,5 +14,8 @@
     ],
     "filament_max_volumetric_speed": [
         "13"
+    ],
+    "dont_slow_down_outer_wall": [
+        "1"
     ]
 }
