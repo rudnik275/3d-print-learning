@@ -7,7 +7,7 @@ For each user preset in ~/Library/Application Support/BambuStudio/user/<id>/{mac
   1. resolve its Studio system parent and the same-named Orca system parent (full `inherits` chains);
   2. Orca preset = inherits the Orca parent + every key where the two system parents disagree (Studio's value wins)
      + the user's own keys;
-  3. process presets get the bridge mapping below;
+  3. process presets get the bridge mapping below, filament presets get dont_slow_down_outer_wall = 1 (see FILAMENT_EXTRAS);
   4. written with a `version` key to Orca's user/default/<kind>/ (and to DIR, default profiles/orca/).
 
 Orca reads presets only at start — quit Orca first or restart it after. Studio is not touched.
@@ -43,6 +43,15 @@ REJECTED = {("tree_support_wall_count", "-1")}
 #   plain seam in that corner; length 20 mm, 10 steps, threshold 155 deg — Orca's defaults;
 # - wipe_on_loops: a short inward move at the end of a closed loop against the seam blob; Studio has no such key.
 ORCA_EXTRAS = {"seam_slope_type": "external", "seam_slope_conditional": "1", "wipe_on_loops": "1"}
+# Studio name -> Orca name, same meaning (the print-model quality package sets the Studio one per project):
+RENAMES = {"no_slow_down_for_cooling_on_outwalls": "dont_slow_down_outer_wall"}
+# Added to every filament preset, so that slicing from the Orca GUI gets it too: the cooling slowdown (layer time
+# under slow_down_layer_time) then stretches the inner wall and infill, never the outer wall. Measured on a 50 mm bin:
+# 17 wall layers between the floor and the top shell had the outer wall at 145 instead of 200 mm/s — a band with a
+# step at each edge; with the key the inner lines go 300 -> 107 there, layer time 5.7 s and total time unchanged.
+# Cost: a small feature (a 17 x 8 mm tab: 5.8 -> 2.7 s per layer) loses the slowdown and needs a modifier part with
+# a low outer_wall_speed over it; forecast check 7 of the print-model skill finds such layers.
+FILAMENT_EXTRAS = {"dont_slow_down_outer_wall": ["1"]}
 
 
 def find(roots, kind, name):
@@ -86,10 +95,12 @@ def convert(kind, user, version):
     s, o = resolve(studio_roots, kind, parent), resolve(orca_roots, kind, parent)
     parity = {k: s[k] for k in s if k in o and k not in META and not k.endswith("_gcode") and one(s[k]) != one(o[k])}
     own = {k: v for k, v in user.items() if k not in META}
-    keys = {**parity, **own}
+    keys = {RENAMES.get(k, k): v for k, v in {**parity, **own}.items()}
     if kind == "process":
         keys.update(bridges(keys))
         keys.update(ORCA_EXTRAS)
+    if kind == "filament":
+        keys.update(FILAMENT_EXTRAS)
     keys = {k: v for k, v in keys.items() if (k, str(one(v))) not in REJECTED}
     out = {"from": "User", "version": version, "inherits": parent, "name": user["name"]}
     out.update({"process": {"print_settings_id": user["name"]}, "filament": {"filament_settings_id": [user["name"]]},
