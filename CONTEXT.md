@@ -1,16 +1,12 @@
 # CONTEXT
 
-Снимок на 2026-10-03. Источник правды по железу и пластику — Obsidian (`справочники/3d-печать.md`, `справочники/филаменты-инвентарь.md`).
+Снимок на 2026-10-10. Источник правды по железу — Obsidian (`справочники/3d-печать/3d-печать.md`). Учёт пластика не ведётся: какая катушка заправлена — спросить.
 
 ## Железо
 
 - Bambu Lab A1 mini соло (без AMS), сопло 0.4, стол Textured PEI. Bambu Studio 02.08.02.61, режим Advanced.
 - Открытая рама → потолок по материалам PETG; ABS/ASA не печатать.
 - В диалоге отправки (02.10) выключены timelapse, auto bed leveling и flow dynamics calibration — так Дима сейчас отправляет; агент при отправке их не меняет.
-
-## Филаменты (инвентарь 14.09.2026)
-
-SUNLU PLA Bone White, PLA Beige, PLA Matte Grey, PLA Matte Oak, PETG Olive Green — все 1.75 мм. PLA Bone White / Beige печатаются на калиброванном `SUNLU PLA @BBL A1M`, Matte Grey / Oak — на калиброванном `SUNLU Matte @BBL A1M` (таблица ниже); PETG — на калиброванном `SUNLU PETG @BBL A1M`.
 
 ## Пресеты Studio на диске
 
