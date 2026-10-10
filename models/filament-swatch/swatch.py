@@ -20,6 +20,8 @@ Why each part exists:
   0.8 mm = 4 layers at 0.20, the depth of the most printed text-swatch profile on 14863.
 - DIN Alternate Bold: at ~5 mm its strokes are ~0.7 mm wide, which a 0.4 nozzle keeps open; light fonts close up.
 - Process 0.20mm Standard + the print-model quality package: the swatch shows the filament as everyday prints do.
+  Top surface in Archimedean chords (record-like rings, a radial sheen on glossy PLA) instead of the package's
+  monotonic lines, one pattern for the whole collection; --top overrides it.
   elefant_foot_compensation stays 0, as in Bambu's own swatch profile, so the snap fits like theirs."""
 import argparse, glob, os, re, subprocess, sys, zipfile
 import numpy as np, trimesh
@@ -32,8 +34,7 @@ FONT = "/System/Library/Fonts/Supplemental/DIN Alternate Bold.ttf"
 SCRIPTS = os.environ.get("PRINT_MODEL_SCRIPTS", os.path.expanduser("~/dev/bambu-print-model/skills/print-model/scripts"))
 DEPTH, T, MARGIN, GAP, MIN_FONT = 0.8, 2.0, 1.6, 1.8, 3.5
 QUALITY = ["resolution=0.004", "slice_closing_radius=0.01", "precise_outer_wall=1", "wall_generator=classic",
-           "reduce_crossing_wall=1", "max_travel_detour_distance=300", "no_slow_down_for_cooling_on_outwalls=1",
-           "top_surface_pattern=monotonic"]
+           "reduce_crossing_wall=1", "max_travel_detour_distance=300", "no_slow_down_for_cooling_on_outwalls=1"]
 NS = "{http://schemas.microsoft.com/3dmanufacturing/core/2015/02}"
 SOURCE = "MakerWorld 14863 (Swatch Display Board by Bambu Lab), profile 14645 '0.2mm layer, 5 top&bot layer swatch'"
 
@@ -119,6 +120,7 @@ def build(lines, font, out_stl):
           f"text {card.volume - res.volume:.1f} mm3")
     if min(sizes) < MIN_FONT:
         print(f"  warning: letters below {MIN_FONT} mm print as mush on a 0.4 nozzle - shorten the longest line")
+    return min(sizes)
 
 
 def main():
@@ -129,6 +131,7 @@ def main():
     ap.add_argument("--process", default="0.20mm Standard @BBL A1M")
     ap.add_argument("--machine", default="Bambu Lab A1 mini 0.4 nozzle")
     ap.add_argument("--font", default=FONT)
+    ap.add_argument("--top", default="archimedeanchords", help="top_surface_pattern (Orca name)")
     ap.add_argument("--send", action="store_true", help="upload to the printer and start (tools/bbl_printer.py)")
     a = ap.parse_args()
     if a.extract:
@@ -141,19 +144,21 @@ def main():
     out = os.path.join(HERE, "out", name)
     os.makedirs(out, exist_ok=True)
     stl = os.path.join(out, name + ".stl")
-    build(a.lines, a.font, stl)
+    font = build(a.lines, a.font, stl)
     cmd = [sys.executable, os.path.join(SCRIPTS, "orca.py"), "slice", out, stl, "--machine", a.machine,
            "--process", a.process, "--filament", a.filament]
-    for kv in QUALITY:
+    for kv in QUALITY + [f"top_surface_pattern={a.top}"]:
         cmd += ["--set", kv]
     sys.stdout.flush()
-    subprocess.run(cmd, check=True)
+    subprocess.run(cmd, check=True, cwd=out)   # the Orca CLI leaves its log in the working directory
     g3 = os.path.join(out, name + ".gcode.3mf")
     head = open(os.path.join(out, "plate_1.gcode"), errors="replace").read()
     t = re.search(r"total estimated time: ([^\n;]+)", head)
     g = re.search(r"filament used \[g\] = ([\d.]+)", head)
-    print(f"{g3}\n  {t.group(1) if t else '?'}, {g.group(1) if g else '?'} g")
+    print(f"{g3}\n  {t.group(1) if t else '?'}, {g.group(1) if g else '?'} g", flush=True)
     if a.send:
+        if font < MIN_FONT or head.count("M1002") < 20:   # mushy letters, or a stub start block instead of Bambu's
+            sys.exit("not sent: fix the warning above first")
         printer = os.path.join(REPO, "tools", "bbl_printer.py")
         subprocess.run([printer, "upload", g3, name + ".gcode.3mf"], check=True)
         subprocess.run([printer, "print", name + ".gcode.3mf", "--no-flowcal"], check=True)
