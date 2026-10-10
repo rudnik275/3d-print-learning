@@ -4,11 +4,11 @@
 # dependencies = ["build123d", "trimesh", "manifold3d", "numpy", "shapely", "networkx", "scipy", "rtree"]
 # ///
 """Filament swatch in the Bambu Lab card format: 24 x 24 x 2 mm, snap hole for a 3.1 mm pin in the top-left
-corner, the filament name debossed 0.8 mm into the top. Sliced in OrcaSlicer the way everyday prints are.
+corner, the filament name in raised letters inside panels sunk 0.6 mm, the top ironed. Sliced in OrcaSlicer.
 
   swatch.py --extract "Swatch Display Board.3mf"
       one time: take Bambu's card mesh out of their 3MF and keep it next to this script (bambu-card.stl, not in git)
-  swatch.py "SUNLU" "PLA Matte" "Oak" --filament "SUNLU Matte @BBL A1M" [--process P] [--font F.ttf] [--send]
+  swatch.py "SUNLU" "PLA Matte" "Oak" --filament "SUNLU Matte @BBL A1M" [--process P] [--font F.ttf] [--deboss] [--send]
       line 1 goes right of the snap hole, lines 2-3 run full width below it;
       out/<name>.gcode.3mf -> open in Orca, Slice plate -> Print plate. --send uploads it and starts the print.
 
@@ -16,12 +16,16 @@ Why each part exists:
 - The card is Bambu's own mesh, not a redrawn one: its hole is a snap (a 2.95 mm circle with two S-shaped slits
   that spring over the 3.1 mm pin of Bambu's board and organizers), and its edges carry 0.1 mm chamfers. Its license
   (MakerWorld 14863, Standard Digital File License) forbids redistributing it, so the repo keeps only this script.
-- Debossed, not raised: the card stays 2 mm and flat, so it stacks on a pin like Bambu's own cards.
-  0.8 mm = 4 layers at 0.20, the depth of the most printed text-swatch profile on 14863.
-- DIN Alternate Bold: at ~5 mm its strokes are ~0.7 mm wide, which a 0.4 nozzle keeps open; light fonts close up.
-- Process 0.20mm Standard + the print-model quality package: the swatch shows the filament as everyday prints do.
-  Top surface in Archimedean chords (record-like rings, a radial sheen on glossy PLA) instead of the package's
-  monotonic lines, one pattern for the whole collection; --top overrides it.
+- Raised letters in a sunken panel, chosen on a test plate (DIN Alternate / Impact x debossed / raised, all ironed):
+  only raised letters read at arm's length. A debossed groove narrower than ~1 mm fills in (the "t" of "Mint" turned
+  "Mini", the counters of P and A became blobs; 80 % of DIN's groove area is under 1 mm), and a heavy font debossed
+  closes the plastic ribs between letters instead (Impact: whole words became dark blocks). Letter tops stay at full
+  height, so the card is still 2 mm and flat and stacks on a pin like Bambu's own.
+- DIN Alternate Bold: raised Impact read too, but blocky; DIN looked best on the same plate.
+- Ironing the topmost surface with top_solid_infill_flow_ratio 1.04 (ADR-0007): glossy letter tops against the
+  unironed panel floor are the contrast the name reads by. Archimedean chords looked busy and left pits along the
+  edges; plain monotonic lines without ironing looked poor. --top changes the pattern under the ironing.
+- Process 0.20mm Standard + the print-model quality package, the filament's own calibrated preset.
   elefant_foot_compensation stays 0, as in Bambu's own swatch profile, so the snap fits like theirs."""
 import argparse, glob, os, re, subprocess, sys, zipfile
 import numpy as np, trimesh
@@ -33,8 +37,10 @@ REPO = os.path.dirname(os.path.dirname(HERE))
 FONT = "/System/Library/Fonts/Supplemental/DIN Alternate Bold.ttf"
 SCRIPTS = os.environ.get("PRINT_MODEL_SCRIPTS", os.path.expanduser("~/dev/bambu-print-model/skills/print-model/scripts"))
 DEPTH, T, MARGIN, GAP, MIN_FONT = 0.8, 2.0, 1.6, 1.8, 3.5
+RAISE, PAD = 0.6, 0.8    # raised letters: field pocket depth, pocket margin around the text block
 QUALITY = ["resolution=0.004", "slice_closing_radius=0.01", "precise_outer_wall=1", "wall_generator=classic",
-           "reduce_crossing_wall=1", "max_travel_detour_distance=300", "no_slow_down_for_cooling_on_outwalls=1"]
+           "reduce_crossing_wall=1", "max_travel_detour_distance=300", "no_slow_down_for_cooling_on_outwalls=1",
+           "ironing_type=topmost", "top_solid_infill_flow_ratio=1.04"]
 NS = "{http://schemas.microsoft.com/3dmanufacturing/core/2015/02}"
 SOURCE = "MakerWorld 14863 (Swatch Display Board by Bambu Lab), profile 14645 '0.2mm layer, 5 top&bot layer swatch'"
 
@@ -86,7 +92,7 @@ def fit(s, w, h, font):
     return 10 * min(w / tw, h / th)
 
 
-def build(lines, font, out_stl):
+def build(lines, font, out_stl, raised=False):
     from build123d import Pos, Compound, export_stl
     card = trimesh.load(CARD)
     hb = hole_bounds(card)
@@ -112,6 +118,15 @@ def build(lines, font, out_stl):
             parts.append(text(s, s2, font)[0].moved(Pos((r2[0] + r2[1]) / 2, y - h / 2, z0)))
             y -= h + GAP
         sizes.append(s2)
+    if raised:   # letters keep full height; a rounded pocket around each text block sinks the field instead
+        from build123d import RectangleRounded, extrude
+        cuts = []
+        for grp in (parts[:1], parts[1:]):
+            if grp:
+                bb = Compound(grp).bounding_box()
+                pk = extrude(RectangleRounded(bb.size.X + 2 * PAD, bb.size.Y + 2 * PAD, PAD), amount=RAISE + 0.2)
+                cuts.append(pk.moved(Pos(bb.center().X, bb.center().Y, T - RAISE)) - Compound(grp))
+        parts = cuts
     export_stl(Compound(parts), out_stl + ".text.stl", tolerance=0.002, angular_tolerance=0.05)
     res = trimesh.boolean.difference([card, trimesh.load(out_stl + ".text.stl")], engine="manifold")
     os.remove(out_stl + ".text.stl")
@@ -131,7 +146,8 @@ def main():
     ap.add_argument("--process", default="0.20mm Standard @BBL A1M")
     ap.add_argument("--machine", default="Bambu Lab A1 mini 0.4 nozzle")
     ap.add_argument("--font", default=FONT)
-    ap.add_argument("--top", default="archimedeanchords", help="top_surface_pattern (Orca name)")
+    ap.add_argument("--top", default="monotonic", help="top_surface_pattern under the ironing (Orca name)")
+    ap.add_argument("--deboss", action="store_true", help="letters cut 0.8 mm into the top instead of raised")
     ap.add_argument("--send", action="store_true", help="upload to the printer and start (tools/bbl_printer.py)")
     a = ap.parse_args()
     if a.extract:
@@ -144,7 +160,7 @@ def main():
     out = os.path.join(HERE, "out", name)
     os.makedirs(out, exist_ok=True)
     stl = os.path.join(out, name + ".stl")
-    font = build(a.lines, a.font, stl)
+    font = build(a.lines, a.font, stl, raised=not a.deboss)
     cmd = [sys.executable, os.path.join(SCRIPTS, "orca.py"), "slice", out, stl, "--machine", a.machine,
            "--process", a.process, "--filament", a.filament]
     for kv in QUALITY + [f"top_surface_pattern={a.top}"]:
@@ -165,4 +181,5 @@ def main():
         print("sent - confirm with tools/bbl_printer.py status (layer count 10)")
 
 
-main()
+if __name__ == "__main__":
+    main()
