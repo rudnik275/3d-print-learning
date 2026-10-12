@@ -3,10 +3,10 @@
         "Direct Drive Standard"
     ],
     "filament_flow_ratio": [
-        "0.98"
+        "0.96"
     ],
     "filament_max_volumetric_speed": [
-        "13"
+        "12"
     ],
     "filament_settings_id": [
         "SUNLU PLA @BBL A1M"
@@ -15,10 +15,10 @@
     "inherits": "SUNLU PLA+ @BBL A1M",
     "name": "SUNLU PLA @BBL A1M",
     "nozzle_temperature": [
-        "220"
+        "225"
     ],
     "nozzle_temperature_initial_layer": [
-        "220"
+        "225"
     ],
     "version": "2.8.0.6"
 }
