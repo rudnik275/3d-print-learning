@@ -13,7 +13,7 @@
 ## Пресеты Studio на диске
 
 - Пользовательские филаменты: `SUNLU PLA @BBL A1M`, `SUNLU Matte @BBL A1M`, `SUNLU PETG @BBL A1M` (калибровки, таблица ниже).
-- Пользовательские процессы: `SUNLU PLA 0.20 A1 mini` (`0.20mm Standard` + мосты SUNLU PLA, ADR-0007) — для обычных печатей SUNLU PLA; `gridfinity` (пакет скилла, 3 стенки, 10 % adaptive cubic + те же мосты); `gridfinity - GRID` (пакет скилла, concentric верх); `Gridfinity PETG 0.20 A1 mini` (`0.20mm Standard` + wall_loops 3, bottom 5, gyroid).
+- Пользовательские процессы: `SUNLU PLA 0.20 A1 mini` (`0.20mm Standard` + мосты SUNLU PLA, ADR-0007) — для обычных печатей SUNLU PLA; `Gridfinity PLA 0.20 A1 mini` и `Gridfinity PETG 0.20 A1 mini` (ADR-0008, с 2026-10-13: одно ядро на бины и сетку — 3 стенки Arachne, gyroid 10 %, 4/5 слоёв, concentric верх, слоновья нога 0.15, шов back, пакет качества; PLA-вариант плюс мосты ADR-0007). Старые `gridfinity` и `gridfinity - GRID` удалены.
 - Базовые значения: `profiles/baseline/*.json` (полностью раскрытые).
   - `SUNLU PLA+ @BBL A1M`: 220 °C / стол 65, MVS 12, flow 1.0, fan 60–80 %, min layer time 6 с.
   - `SUNLU PLA Matte @BBL A1M` (системный, база матового): 220 °C / стол 65, MVS 21, flow 0.98, плотность 1.3, диапазон 205–245, fan 60–80 %, min layer time 6 с.
