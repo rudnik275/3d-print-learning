@@ -1,15 +1,14 @@
 {
+    "from": "User",
+    "version": "02.01.00.19",
+    "inherits": "0.20mm Standard @BBL A1M",
+    "name": "Gridfinity 0.20 A1 mini",
+    "print_settings_id": "Gridfinity 0.20 A1 mini",
+    "sparse_infill_pattern": "gyroid",
     "bottom_shell_layers": "4",
-    "bridge_flow": "1.6",
-    "bridge_speed": [
-        "10"
-    ],
     "elefant_foot_compensation": "0.15",
     "enable_prime_tower": "0",
-    "from": "User",
-    "inherits": "0.20mm Standard @BBL A1M",
     "max_travel_detour_distance": "300",
-    "name": "Gridfinity PLA 0.20 A1 mini",
     "overhang_2_4_speed": [
         "10"
     ],
@@ -17,13 +16,6 @@
         "10"
     ],
     "precise_outer_wall": "1",
-    "print_extruder_id": [
-        "1"
-    ],
-    "print_extruder_variant": [
-        "Direct Drive Standard"
-    ],
-    "print_settings_id": "Gridfinity PLA 0.20 A1 mini",
     "reduce_crossing_wall": "1",
     "resolution": "0.004",
     "seam_position": "back",
@@ -31,10 +23,15 @@
     "skin_infill_density": "10%",
     "slice_closing_radius": "0.01",
     "sparse_infill_density": "10%",
-    "sparse_infill_pattern": "gyroid",
     "top_shell_layers": "5",
     "top_surface_pattern": "concentric",
-    "version": "2.8.0.6",
     "wall_generator": "arachne",
-    "wall_loops": "3"
+    "wall_loops": "3",
+    "thick_bridges": "1",
+    "thick_internal_bridges": "1",
+    "internal_bridge_speed": "50",
+    "internal_bridge_flow": "1",
+    "seam_slope_type": "external",
+    "seam_slope_conditional": "1",
+    "wipe_on_loops": "1"
 }
