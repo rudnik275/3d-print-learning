@@ -14,7 +14,7 @@
 | Что | Значение | Где стоит |
 | --- | --- | --- |
 | Поток SUNLU PLA | **1.00** (было 0.98) | пресет филамента `SUNLU PLA @BBL A1M` |
-| Мосты | `bridge_speed 10`, `bridge_flow 1.6`, `overhang_2_4_speed 10`, `overhang_3_4_speed 10` | новый пресет процесса `SUNLU PLA 0.20 A1 mini` (0.20 Standard + эти четыре ключа) и `gridfinity`; `gridfinity - GRID` и PETG-пресет не тронуты |
+| Мосты | `bridge_speed 10`, `bridge_flow 1.6`, `overhang_2_4_speed 10`, `overhang_3_4_speed 10` | новый пресет процесса `SUNLU PLA 0.20 A1 mini` (0.20 Standard + эти четыре ключа) и `gridfinity`; `gridfinity - GRID` и PETG-пресет не тронуты. **13.10:** в `SUNLU PLA 0.20 A1 mini` добавлен пакет качества (ADR-0003/0004: `resolution 0.004`, `slice_closing_radius 0.01`, `precise_outer_wall`, `reduce_crossing_wall` с обходом 300 мм, без башни) — пресет стал полным процессом SUNLU PLA для ручной нарезки в Orca, а не только мостами; Gridfinity с того же дня на своём пресете (ADR-0008) |
 | Поддержки под плоский низ | `normal(auto)`, `support_top_z_distance 0.10` | по модели (`variant --set`), не в пресете |
 | Поддержки под органику | `tree(auto)`, зазор кратен слою | по модели, как раньше |
 | Ironing | выключен по умолчанию; для деталей с большим видимым плоским верхом — `ironing_type top` + `top_solid_infill_flow_ratio 1.04` | по модели |

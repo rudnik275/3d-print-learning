@@ -1,0 +1,29 @@
+{
+    "bridge_flow": "1.6",
+    "bridge_speed": [
+        "10"
+    ],
+    "enable_prime_tower": "0",
+    "from": "User",
+    "inherits": "0.20mm Standard @BBL A1M",
+    "max_travel_detour_distance": "300",
+    "name": "SUNLU PLA 0.20 A1 mini",
+    "overhang_2_4_speed": [
+        "10"
+    ],
+    "overhang_3_4_speed": [
+        "10"
+    ],
+    "precise_outer_wall": "1",
+    "print_extruder_id": [
+        "1"
+    ],
+    "print_extruder_variant": [
+        "Direct Drive Standard"
+    ],
+    "print_settings_id": "SUNLU PLA 0.20 A1 mini",
+    "reduce_crossing_wall": "1",
+    "resolution": "0.004",
+    "slice_closing_radius": "0.01",
+    "version": "2.8.0.6"
+}

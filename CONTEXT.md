@@ -13,7 +13,7 @@
 ## Пресеты Studio на диске
 
 - Пользовательские филаменты: `SUNLU PLA @BBL A1M`, `SUNLU Matte @BBL A1M`, `SUNLU PETG @BBL A1M` (калибровки, таблица ниже).
-- Пользовательские процессы: `SUNLU PLA 0.20 A1 mini` (`0.20mm Standard` + мосты SUNLU PLA, ADR-0007) — для обычных печатей SUNLU PLA; `Gridfinity 0.20 A1 mini` (ADR-0008, с 2026-10-13: один пресет на PLA и PETG, бины и сетку — 3 стенки Arachne, gyroid 10 %, 4/5 слоёв, concentric верх, слоновья нога 0.15, шов back, нависания 10 мм/с, мосты стандартные, пакет качества). Старые `gridfinity`, `gridfinity - GRID` и `Gridfinity PETG 0.20 A1 mini` удалены.
+- Пользовательские процессы: `SUNLU PLA 0.20 A1 mini` (`0.20mm Standard` + мосты SUNLU PLA ADR-0007 + пакет качества с 13.10) — для обычных печатей SUNLU PLA; `Gridfinity 0.20 A1 mini` (ADR-0008, с 2026-10-13: один пресет на PLA и PETG, бины и сетку — 3 стенки Arachne, gyroid 10 %, 4/5 слоёв, concentric верх, слоновья нога 0.15, шов back, нависания 10 мм/с, мосты стандартные, пакет качества). Старые `gridfinity`, `gridfinity - GRID` и `Gridfinity PETG 0.20 A1 mini` удалены.
 - Базовые значения: `profiles/baseline/*.json` (полностью раскрытые).
   - `SUNLU PLA+ @BBL A1M`: 220 °C / стол 65, MVS 12, flow 1.0, fan 60–80 %, min layer time 6 с.
   - `SUNLU PLA Matte @BBL A1M` (системный, база матового): 220 °C / стол 65, MVS 21, flow 0.98, плотность 1.3, диапазон 205–245, fan 60–80 %, min layer time 6 с.
@@ -30,7 +30,7 @@
 | `SUNLU Matte @BBL A1M` (Matte Grey, Oak) | SUNLU PLA Matte @BBL A1M | 225 °C | 0.975 | 24 мм³/с (чисто до 26, предел выше) | 2026-09-19 |
 | `SUNLU PETG @BBL A1M` (Olive Green) | Generic PETG @BBL A1M | 245 °C | 0.95 | 16 мм³/с | 2026-09-22; обдув 30 %, мосты и нависания 70 % — 29.09 |
 
-SUNLU PLA, процесс (ADR-0007, `lessons/07-supports-bridges-top.md`): мосты `bridge_speed 10` × `bridge_flow 1.6`, нависания 2/4 и 3/4 — 10 мм/с (в пресетах `SUNLU PLA 0.20 A1 mini` и `gridfinity`); поддержки под плоский низ — `normal(auto)` с зазором 0.10, под органику — деревья; ironing — по модели, с `top_solid_infill_flow_ratio 1.04`.
+SUNLU PLA, процесс (ADR-0007, `lessons/07-supports-bridges-top.md`): мосты `bridge_speed 10` × `bridge_flow 1.6`, нависания 2/4 и 3/4 — 10 мм/с (в пресете `SUNLU PLA 0.20 A1 mini`; у Gridfinity свой пресет, ADR-0008); поддержки под плоский низ — `normal(auto)` с зазором 0.10, под органику — деревья; ironing — по модели, с `top_solid_infill_flow_ratio 1.04`.
 
 ## Термины (как в Bambu Studio)
 
