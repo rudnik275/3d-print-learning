@@ -22,9 +22,9 @@ Why each part exists:
   closes the plastic ribs between letters instead (Impact: whole words became dark blocks). Letter tops stay at full
   height, so the card is still 2 mm and flat and stacks on a pin like Bambu's own.
 - DIN Alternate Bold: raised Impact read too, but blocky; DIN looked best on the same plate.
-- Ironing the topmost surface with top_solid_infill_flow_ratio 1.04 (ADR-0007): glossy letter tops against the
-  unironed panel floor are the contrast the name reads by. Archimedean chords looked busy and left pits along the
-  edges; plain monotonic lines without ironing looked poor. --top changes the pattern under the ironing.
+- No ironing, plain monotonic top (ironing_type=no ironing explicitly, so a process preset cannot bring it back):
+  the ironed glossy tops read well on PLA, but on PETG the nozzle smears the top into glossy patches, and the swatch
+  has to show the plastic the way ordinary parts come out. --top changes the top pattern.
 - Process 0.20mm Standard + the print-model quality package, the filament's own calibrated preset.
   elefant_foot_compensation stays 0, as in Bambu's own swatch profile, so the snap fits like theirs."""
 import argparse, glob, os, re, subprocess, sys, zipfile
@@ -40,7 +40,7 @@ DEPTH, T, MARGIN, GAP, MIN_FONT = 0.8, 2.0, 1.6, 1.8, 3.5
 RAISE, PAD = 0.6, 0.8    # raised letters: field pocket depth, pocket margin around the text block
 QUALITY = ["resolution=0.004", "slice_closing_radius=0.01", "precise_outer_wall=1", "wall_generator=classic",
            "reduce_crossing_wall=1", "max_travel_detour_distance=300", "no_slow_down_for_cooling_on_outwalls=1",
-           "ironing_type=topmost", "top_solid_infill_flow_ratio=1.04"]
+           "ironing_type=no ironing"]
 NS = "{http://schemas.microsoft.com/3dmanufacturing/core/2015/02}"
 SOURCE = "MakerWorld 14863 (Swatch Display Board by Bambu Lab), profile 14645 '0.2mm layer, 5 top&bot layer swatch'"
 
@@ -146,7 +146,7 @@ def main():
     ap.add_argument("--process", default="0.20mm Standard @BBL A1M")
     ap.add_argument("--machine", default="Bambu Lab A1 mini 0.4 nozzle")
     ap.add_argument("--font", default=FONT)
-    ap.add_argument("--top", default="monotonic", help="top_surface_pattern under the ironing (Orca name)")
+    ap.add_argument("--top", default="monotonic", help="top_surface_pattern of the card (Orca name)")
     ap.add_argument("--deboss", action="store_true", help="letters cut 0.8 mm into the top instead of raised")
     ap.add_argument("--send", action="store_true", help="upload to the printer and start (tools/bbl_printer.py)")
     a = ap.parse_args()
