@@ -9,12 +9,18 @@
     "bridge_speed": [
         "10"
     ],
+    "enable_prime_tower": "0",
+    "max_travel_detour_distance": "300",
     "overhang_2_4_speed": [
         "10"
     ],
     "overhang_3_4_speed": [
         "10"
     ],
+    "precise_outer_wall": "1",
+    "reduce_crossing_wall": "1",
+    "resolution": "0.004",
+    "slice_closing_radius": "0.01",
     "thick_bridges": "1",
     "thick_internal_bridges": "1",
     "internal_bridge_speed": "50",
