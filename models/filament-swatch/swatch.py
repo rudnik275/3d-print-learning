@@ -8,7 +8,7 @@ corner, the filament name in raised letters inside panels sunk 0.6 mm, the top i
 
   swatch.py --extract "Swatch Display Board.3mf"
       one time: take Bambu's card mesh out of their 3MF and keep it next to this script (bambu-card.stl, not in git)
-  swatch.py "SUNLU" "PLA Matte" "Oak" --filament "SUNLU Matte @BBL A1M" [--process P] [--font F.ttf] [--deboss] [--send]
+  swatch.py "SUNLU" "PLA Matte" "Oak" --filament "SUNLU Matte @BBL A1M" --bed textured [--process P] [--font F.ttf] [--deboss] [--send]
       line 1 goes right of the snap hole, lines 2-3 run full width below it;
       out/<name>.gcode.3mf -> open in Orca, Slice plate -> Print plate. --send uploads it and starts the print.
 
@@ -26,7 +26,10 @@ Why each part exists:
   the ironed glossy tops read well on PLA, but on PETG the nozzle smears the top into glossy patches, and the swatch
   has to show the plastic the way ordinary parts come out. --top changes the top pattern.
 - Process 0.20mm Standard + the print-model quality package, the filament's own calibrated preset.
-  elefant_foot_compensation stays 0, as in Bambu's own swatch profile, so the snap fits like theirs."""
+  elefant_foot_compensation stays 0, as in Bambu's own swatch profile, so the snap fits like theirs.
+- --bed is required: the A1 mini does not detect the plate and heats what the file says, and without it the Orca CLI
+  slices for whatever plate the Orca window last had. The plate sets the bed temperature (PLA: 65 C textured, 60 smooth)
+  and the textured plate's G29.1 Z-0.02 in the start block."""
 import argparse, glob, os, re, subprocess, sys, zipfile
 import numpy as np, trimesh
 from xml.etree import ElementTree as ET
@@ -42,6 +45,7 @@ QUALITY = ["resolution=0.004", "slice_closing_radius=0.01", "precise_outer_wall=
            "reduce_crossing_wall=1", "max_travel_detour_distance=300", "no_slow_down_for_cooling_on_outwalls=1",
            "ironing_type=no ironing"]
 NS = "{http://schemas.microsoft.com/3dmanufacturing/core/2015/02}"
+BEDS = {"textured": "Textured PEI Plate", "smooth": "High Temp Plate"}   # Orca's name for the Smooth PEI plate
 SOURCE = "MakerWorld 14863 (Swatch Display Board by Bambu Lab), profile 14645 '0.2mm layer, 5 top&bot layer swatch'"
 
 
@@ -145,6 +149,7 @@ def main():
     ap.add_argument("--filament", help="Orca filament preset, e.g. 'SUNLU Matte @BBL A1M'")
     ap.add_argument("--process", default="0.20mm Standard @BBL A1M")
     ap.add_argument("--machine", default="Bambu Lab A1 mini 0.4 nozzle")
+    ap.add_argument("--bed", required=True, choices=BEDS, help="plate on the printer: textured or smooth PEI")
     ap.add_argument("--font", default=FONT)
     ap.add_argument("--top", default="monotonic", help="top_surface_pattern of the card (Orca name)")
     ap.add_argument("--deboss", action="store_true", help="letters cut 0.8 mm into the top instead of raised")
@@ -163,7 +168,7 @@ def main():
     font = build(a.lines, a.font, stl, raised=not a.deboss)
     cmd = [sys.executable, os.path.join(SCRIPTS, "orca.py"), "slice", out, stl, "--machine", a.machine,
            "--process", a.process, "--filament", a.filament]
-    for kv in QUALITY + [f"top_surface_pattern={a.top}"]:
+    for kv in QUALITY + [f"top_surface_pattern={a.top}", f"curr_bed_type={BEDS[a.bed]}"]:
         cmd += ["--set", kv]
     sys.stdout.flush()
     subprocess.run(cmd, check=True, cwd=out)   # the Orca CLI leaves its log in the working directory
@@ -171,7 +176,9 @@ def main():
     head = open(os.path.join(out, "plate_1.gcode"), errors="replace").read()
     t = re.search(r"total estimated time: ([^\n;]+)", head)
     g = re.search(r"filament used \[g\] = ([\d.]+)", head)
-    print(f"{g3}\n  {t.group(1) if t else '?'}, {g.group(1) if g else '?'} g", flush=True)
+    bed = re.search(r"; curr_bed_type = ([^\n;]+)", head)
+    print(f"{g3}\n  {t.group(1) if t else '?'}, {g.group(1) if g else '?'} g, {bed.group(1).strip() if bed else '?'}",
+          flush=True)
     if a.send:
         if font < MIN_FONT or head.count("M1002") < 20:   # mushy letters, or a stub start block instead of Bambu's
             sys.exit("not sent: fix the warning above first")
