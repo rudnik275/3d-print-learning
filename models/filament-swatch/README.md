@@ -6,13 +6,16 @@
 вращающийся [465690](https://makerworld.com/en/models/465690). Печать — около 11 минут и 1.2 г.
 
 ```
-models/filament-swatch/swatch.py "SUNLU" "PLA Matte" "Oak" --filament "SUNLU Matte @BBL A1M"
+models/filament-swatch/swatch.py "SUNLU" "PLA Matte" "Oak" --filament "SUNLU Matte @BBL A1M" --bed textured
 ```
 
 Первая строка встаёт справа от защёлки, вторая и третья — на всю ширину под ней. Длинная нижняя
 строка сама переносится по пробелу, если иначе буквы вышли бы мельче 3.5 мм: «PLA Bone White»
 становится «PLA Bone / White». Нужна другая разбивка — передать три строки явно.
-`--filament` — имя пресета филамента в Orca.
+`--filament` — имя пресета филамента в Orca. `--bed textured|smooth` — плита, которая стоит на принтере, обязательно:
+A1 mini плиту не распознаёт и греет то, что записано в файле, а CLI Orca без явной плиты режет под ту, что последней
+выбрана в окне Orca. От плиты зависят температура стола (PLA: 65 °C на текстурированной, 60 на гладкой) и поправка
+`G29.1 Z-0.02` под текстуру в стартовом блоке.
 
 Результат — `out/<имя>/<имя>.gcode.3mf`. Дальше один из двух путей:
 - `open -a OrcaSlicer <файл>` (Orca в режиме одного окна), Slice plate → Print plate → Send;
