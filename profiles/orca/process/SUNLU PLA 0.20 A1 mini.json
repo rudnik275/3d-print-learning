@@ -23,7 +23,7 @@
     "slice_closing_radius": "0.01",
     "thick_bridges": "1",
     "thick_internal_bridges": "1",
-    "internal_bridge_speed": "50",
+    "internal_bridge_speed": "75",
     "internal_bridge_flow": "0.625",
     "set_other_flow_ratios": "1",
     "overhang_flow_ratio": "0.625",

@@ -23,9 +23,10 @@ G-code: 1.6 -> 0.203 mm2 at 0.558 mm), which is Orca's *thick* bridge; Orca's th
 its 1.6 puts down half the plastic (0.114 mm2). Orca's internal bridge reuses the bridge thread and multiplies it by
 internal_bridge_flow; overhang walls take the same thread, scaled by overhang_flow_ratio (only with
 set_other_flow_ratios on). So 1 / bridge_flow returns both to the plain d0.4 thread Studio used for them, and internal
-bridges run at 50 mm/s — Studio's internal bridges before ADR-0007, with no recorded problems. The slow 10 mm/s x 1.6
-of ADR-0007 then stays on visible bridges only: inherited by internal bridges it hung in loops over 10 % gyroid
-(Gridfinity bin, 2026-10-03)."""
+bridges run at 75 mm/s — what Orca's own A1 mini preset gives them (150 % of its 50 mm/s bridge); 50 until 2026-10-21,
+when a 153 x 153 mm plate spent 11 of its 118 min on one internal-bridge layer. The thread (0.126 mm2) tops out near
+95 mm/s at SUNLU PLA's 12 mm3/s. The slow 10 mm/s x 1.6 of ADR-0007 then stays on visible bridges only: inherited by
+internal bridges it hung in loops over 10 % gyroid (Gridfinity bin, 2026-10-03)."""
 import glob, json, os, sys
 
 STUDIO = os.path.expanduser("~/Library/Application Support/BambuStudio")
@@ -82,7 +83,7 @@ def one(v):
 def bridges(keys):
     bf = float(one(keys.get("bridge_flow", "1")))
     inv = f"{1 / bf:.3f}".rstrip("0").rstrip(".")
-    out = {"thick_bridges": "1", "thick_internal_bridges": "1", "internal_bridge_speed": "50", "internal_bridge_flow": inv}
+    out = {"thick_bridges": "1", "thick_internal_bridges": "1", "internal_bridge_speed": "75", "internal_bridge_flow": inv}
     if bf != 1:
         out.update({"set_other_flow_ratios": "1", "overhang_flow_ratio": inv})
     return out
