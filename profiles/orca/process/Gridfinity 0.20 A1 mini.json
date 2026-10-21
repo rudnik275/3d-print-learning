@@ -29,7 +29,7 @@
     "wall_loops": "3",
     "thick_bridges": "1",
     "thick_internal_bridges": "1",
-    "internal_bridge_speed": "50",
+    "internal_bridge_speed": "75",
     "internal_bridge_flow": "1",
     "seam_slope_type": "external",
     "seam_slope_conditional": "1",
