@@ -25,8 +25,9 @@ internal_bridge_flow; overhang walls take the same thread, scaled by overhang_fl
 set_other_flow_ratios on). So 1 / bridge_flow returns both to the plain d0.4 thread Studio used for them, and internal
 bridges run at 75 mm/s — what Orca's own A1 mini preset gives them (150 % of its 50 mm/s bridge); 50 until 2026-10-21,
 when a 153 x 153 mm plate spent 11 of its 118 min on one internal-bridge layer. The thread (0.126 mm2) tops out near
-95 mm/s at SUNLU PLA's 12 mm3/s. The slow 10 mm/s x 1.6 of ADR-0007 then stays on visible bridges only: inherited by
-internal bridges it hung in loops over 10 % gyroid (Gridfinity bin, 2026-10-03)."""
+95 mm/s at SUNLU PLA's 12 mm3/s. The slow 10 mm/s x 1.6 of ADR-0007 then stayed on visible bridges only: inherited by
+internal bridges it hung in loops over 10 % gyroid (Gridfinity bin, 2026-10-03). Since 2026-10-24 no preset sets
+bridge_flow (it sagged at times), so the mapping yields Orca's defaults; it still matters for a project that sets one."""
 import glob, json, os, sys
 
 STUDIO = os.path.expanduser("~/Library/Application Support/BambuStudio")
