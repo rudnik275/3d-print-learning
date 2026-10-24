@@ -18,6 +18,13 @@ Traps found on 2026-10-03 (Orca 2.4.2, Studio 02.08.02.61):
 - Machine start/end G-code stays Orca's own: same Bambu blocks (21 x M1002 in the start), written against Orca's
   placeholder set; Studio's newer blocks use placeholders Orca may not know (old_filament_temp).
 
+Orca 2.5.0-alpha (installed ~2026-10-17) ships its system presets as <vendor>.opc caches, without BBL.json and the BBL/
+tree, so the Orca parent can no longer be read from JSON: the script asks Orca's CLI for it (--export-settings with a
+one-line user preset inheriting the parent, in a scratch data dir holding Orca's system/ caches — the CLI resolves
+inherits and include itself, 0.2 s per parent) and reads the version from the stamp at the head of BBL.opc. Parity
+then compares values, not spellings: the resolved config writes 1 and 100% where Studio's JSON has 1.0 and 100.
+The plugin's orca.py does the same (bambu-print-model 0.1.11, references/orca.md "Orca 2.5").
+
 Bridges. Studio lays a bridge as a round thread d = 0.4 * sqrt(bridge_flow) spaced d + 0.05 (measured on a Studio
 G-code: 1.6 -> 0.203 mm2 at 0.558 mm), which is Orca's *thick* bridge; Orca's thin bridge is a flat 0.4 x 0.2 strip and
 its 1.6 puts down half the plastic (0.114 mm2). Orca's internal bridge reuses the bridge thread and multiplies it by
@@ -28,11 +35,13 @@ when a 153 x 153 mm plate spent 11 of its 118 min on one internal-bridge layer. 
 95 mm/s at SUNLU PLA's 12 mm3/s. The slow 10 mm/s x 1.6 of ADR-0007 then stayed on visible bridges only: inherited by
 internal bridges it hung in loops over 10 % gyroid (Gridfinity bin, 2026-10-03). Since 2026-10-24 no preset sets
 bridge_flow (it sagged at times), so the mapping yields Orca's defaults; it still matters for a project that sets one."""
-import glob, json, os, sys
+import glob, json, os, shutil, struct, subprocess, sys, tempfile
 
 STUDIO = os.path.expanduser("~/Library/Application Support/BambuStudio")
 ORCA_APP = "/Applications/OrcaSlicer.app/Contents/Resources/profiles"
-ORCA_USER = os.path.expanduser("~/Library/Application Support/OrcaSlicer/user/default")
+ORCA_CLI = "/Applications/OrcaSlicer.app/Contents/MacOS/OrcaSlicer"
+ORCA_DATA = os.path.expanduser("~/Library/Application Support/OrcaSlicer")
+ORCA_USER = f"{ORCA_DATA}/user/default"
 KINDS = ("machine", "process", "filament")
 META = {"name", "inherits", "from", "setting_id", "base_id", "filament_id", "version", "instantiation", "description",
         "renamed_from", "type", "print_settings_id", "filament_settings_id", "printer_settings_id", "compatible_printers",
@@ -81,6 +90,53 @@ def one(v):
     return v[0] if isinstance(v, list) and len(v) == 1 else v
 
 
+def norm(v):
+    """A value as it reads: Orca's resolved config writes 1 and 100% where Studio's JSON has 1.0 and 100."""
+    v = one(v)
+    if isinstance(v, list):
+        return [norm(x) for x in v]
+    try:
+        return float(str(v).strip().rstrip("%"))
+    except ValueError:
+        return str(v)
+
+
+def orca_version():
+    """BBL.json's version (Orca 2.4), else the BBL.opc stamp: 20-byte header, u32 format, u64-sized name, u64-sized version."""
+    for d in (ORCA_APP, f"{ORCA_DATA}/system"):
+        if os.path.isfile(f"{d}/BBL.json"):
+            return json.load(open(f"{d}/BBL.json"))["version"]
+    for d in (f"{ORCA_DATA}/system", ORCA_APP):
+        if os.path.isfile(f"{d}/BBL.opc"):
+            b = open(f"{d}/BBL.opc", "rb").read(4096)
+            i = 24 + 8 + struct.unpack_from("<Q", b, 24)[0]
+            return b[i + 8:i + 8 + struct.unpack_from("<Q", b, i)[0]].decode()
+    raise SystemExit("neither BBL.json nor BBL.opc found: open OrcaSlicer once")
+
+
+_ORCA = {}
+
+
+def orca_parent(kind, name):
+    """The same-named Orca system preset, resolved: from Orca 2.4's JSON tree, else through Orca 2.5's CLI."""
+    if os.path.isfile(f"{ORCA_APP}/BBL.json"):
+        return resolve([f"{ORCA_APP}/BBL", f"{ORCA_APP}/OrcaFilamentLibrary"], kind, name)
+    if (kind, name) not in _ORCA:
+        with tempfile.TemporaryDirectory() as tmp:
+            shutil.copytree(f"{ORCA_DATA}/system", f"{tmp}/system")
+            os.makedirs(f"{tmp}/user/default/{kind}")
+            stand = f"{tmp}/user/default/{kind}/{name} - stand-in.json"
+            key = {"process": "print_settings_id", "filament": "filament_settings_id", "machine": "printer_settings_id"}[kind]
+            json.dump({"type": kind, "name": name + " - stand-in", "inherits": name, "from": "User",
+                       "version": orca_version(), key: name + " - stand-in"}, open(stand, "w"))
+            r = subprocess.run([ORCA_CLI, "--datadir", tmp, "--load-filaments" if kind == "filament" else "--load-settings",
+                                stand, "--export-settings", f"{tmp}/flat.json"], capture_output=True, text=True)
+            if r.returncode or not os.path.exists(f"{tmp}/flat.json"):
+                raise SystemExit(f"Orca could not resolve {kind}/{name}: " + (r.stdout + r.stderr).strip()[-300:])
+            _ORCA[(kind, name)] = json.load(open(f"{tmp}/flat.json"))
+    return _ORCA[(kind, name)]
+
+
 def bridges(keys):
     bf = float(one(keys.get("bridge_flow", "1")))
     inv = f"{1 / bf:.3f}".rstrip("0").rstrip(".")
@@ -91,11 +147,9 @@ def bridges(keys):
 
 
 def convert(kind, user, version):
-    studio_roots = [f"{STUDIO}/system/BBL"]
-    orca_roots = [f"{ORCA_APP}/BBL", f"{ORCA_APP}/OrcaFilamentLibrary"]
     parent = user["inherits"]
-    s, o = resolve(studio_roots, kind, parent), resolve(orca_roots, kind, parent)
-    parity = {k: s[k] for k in s if k in o and k not in META and not k.endswith("_gcode") and one(s[k]) != one(o[k])}
+    s, o = resolve([f"{STUDIO}/system/BBL"], kind, parent), orca_parent(kind, parent)
+    parity = {k: s[k] for k in s if k in o and k not in META and not k.endswith("_gcode") and norm(s[k]) != norm(o[k])}
     own = {k: v for k, v in user.items() if k not in META}
     keys = {RENAMES.get(k, k): v for k, v in {**parity, **own}.items()}
     if kind == "process":
@@ -111,17 +165,28 @@ def convert(kind, user, version):
     return out, parity
 
 
+def pending_delete(json_path):
+    """A preset deleted through its .info (sync_info = delete) keeps its JSON until Studio next starts — on 2026-10-24
+    the three Gridfinity presets ADR-0008 retired were still there, eleven days on, while Dima sliced in Orca."""
+    info = json_path[:-5] + ".info"
+    return os.path.isfile(info) and any(l.split("=", 1)[1].strip() == "delete"
+                                         for l in open(info) if l.startswith("sync_info"))
+
+
 def main():
     args = sys.argv[1:]
     dry = "--dry-run" in args
     repo = args[args.index("--repo-copy") + 1] if "--repo-copy" in args else os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "profiles", "orca")
-    version = json.load(open(f"{ORCA_APP}/BBL.json"))["version"]
+    version = orca_version()
     users = [d for d in glob.glob(f"{STUDIO}/user/*/") if glob.glob(f"{d}*/*.json")]
     for d in users:
         for kind in KINDS:
             for f in sorted(glob.glob(f"{d}{kind}/*.json")):
                 user = json.load(open(f))
+                if pending_delete(f):
+                    print(f"{kind:8s} {user['name']:32s} skipped: marked sync_info = delete, Studio removes it on its next start")
+                    continue
                 out, parity = convert(kind, user, version)
                 print(f"{kind:8s} {user['name']:32s} <- {user['inherits']}   parity: {sorted(parity) or '-'}")
                 if dry:
