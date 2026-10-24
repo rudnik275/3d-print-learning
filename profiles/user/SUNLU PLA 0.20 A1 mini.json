@@ -1,8 +1,4 @@
 {
-    "bridge_flow": "1.6",
-    "bridge_speed": [
-        "10"
-    ],
     "enable_prime_tower": "0",
     "from": "User",
     "inherits": "0.20mm Standard @BBL A1M",
