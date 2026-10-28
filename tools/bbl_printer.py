@@ -41,7 +41,8 @@ def connect(timeout=15):
     while time.time() - t < timeout:
         if pr.mqtt_client_ready(): break
         time.sleep(0.5)
-    else: raise SystemExit("printer did not answer over MQTT within %ds (LAN access refused? Developer/LAN mode?)" % timeout)
+    else: raise SystemExit("printer did not answer over MQTT within %ds (LAN access refused? Developer/LAN mode? "
+                           "If ping reaches it, this Python lacks macOS Local Network access: use tools/bbl_send.py)" % timeout)
     # A1 series does not push a full state on connect — ask for it
     mc = getattr(pr, "mqtt_client", None)
     if mc and hasattr(mc, "pushall"): mc.pushall()
